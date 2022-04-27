@@ -10,11 +10,12 @@ exports.ParserModule = void 0;
 const common_1 = require("@nestjs/common");
 const parser_controller_1 = require("../controllers/parser.controller");
 const parser_service_1 = require("../services/parser.service");
+const apartment_module_1 = require("./apartment.module");
 let ParserModule = class ParserModule {
 };
 ParserModule = __decorate([
     (0, common_1.Module)({
-        imports: [],
+        imports: [apartment_module_1.ApartmentModule],
         providers: [parser_service_1.ParserService],
         controllers: [parser_controller_1.ParserController],
         exports: [parser_service_1.ParserService],

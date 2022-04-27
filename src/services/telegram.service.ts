@@ -455,6 +455,10 @@ export class TelegramService {
   }
 
   private getCurrentFloorFilter() {
+    if (!this.user) {
+      return null;
+    }
+
     const { minFloorFilter, maxFloorFilter } = this.user;
 
     if (!minFloorFilter || !maxFloorFilter) {
@@ -465,6 +469,10 @@ export class TelegramService {
   }
 
   private getCurrentMaxPriceFilter() {
+    if (!this.user) {
+      return null;
+    }
+
     const { maxPriceFilter } = this.user;
 
     if (!maxPriceFilter) {
@@ -475,6 +483,10 @@ export class TelegramService {
   }
 
   private getCurrentRoomsFilter() {
+    if (!this.user) {
+      return null;
+    }
+
     const { roomsFilter } = this.user;
 
     if (!roomsFilter || !JSON.parse(roomsFilter)) {
@@ -491,6 +503,10 @@ export class TelegramService {
   }
 
   private getCurrentDistrictsFilter() {
+    if (!this.user) {
+      return null;
+    }
+
     const { districtsFilter } = this.user;
 
     if (!districtsFilter || !JSON.parse(districtsFilter)) {

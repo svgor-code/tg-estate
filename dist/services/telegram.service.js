@@ -277,6 +277,9 @@ let TelegramService = TelegramService_1 = class TelegramService {
         });
     }
     getCurrentFloorFilter() {
+        if (!this.user) {
+            return null;
+        }
         const { minFloorFilter, maxFloorFilter } = this.user;
         if (!minFloorFilter || !maxFloorFilter) {
             return null;
@@ -284,6 +287,9 @@ let TelegramService = TelegramService_1 = class TelegramService {
         return (0, messages_1.MESSAGE_CURRENT_FLOOR_FILTER)(minFloorFilter, maxFloorFilter);
     }
     getCurrentMaxPriceFilter() {
+        if (!this.user) {
+            return null;
+        }
         const { maxPriceFilter } = this.user;
         if (!maxPriceFilter) {
             return null;
@@ -291,6 +297,9 @@ let TelegramService = TelegramService_1 = class TelegramService {
         return (0, messages_1.MESSAGE_CURRENT_MAXPRICE_FILTER)(maxPriceFilter);
     }
     getCurrentRoomsFilter() {
+        if (!this.user) {
+            return null;
+        }
         const { roomsFilter } = this.user;
         if (!roomsFilter || !JSON.parse(roomsFilter)) {
             return null;
@@ -300,6 +309,9 @@ let TelegramService = TelegramService_1 = class TelegramService {
         return (0, messages_1.MESSAGE_CURRENT_ROOMS_FILTER)(activeRooms);
     }
     getCurrentDistrictsFilter() {
+        if (!this.user) {
+            return null;
+        }
         const { districtsFilter } = this.user;
         if (!districtsFilter || !JSON.parse(districtsFilter)) {
             return null;

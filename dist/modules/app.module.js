@@ -16,7 +16,7 @@ const parser_module_1 = require("./parser.module");
 const task_module_1 = require("./task.module");
 const telegram_module_1 = require("./telegram.module");
 const { MONGO_USERNAME, MONGO_PASSWORD, MONGO_PORT, MONGO_DB } = process.env;
-const mongoConnectionString = `mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@estate-server-mongo-1:${MONGO_PORT}/${MONGO_DB}-new?authSource=admin&readPreference=primary&directConnection=true&ssl=false`;
+const mongoConnectionString = `mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@tg-estate-mongo-1:27017/${MONGO_DB}?authSource=admin&readPreference=primary&directConnection=true&ssl=false`;
 let AppModule = class AppModule {
 };
 AppModule = __decorate([

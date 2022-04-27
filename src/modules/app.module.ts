@@ -9,7 +9,7 @@ import { TelegramModule } from './telegram.module';
 
 const { MONGO_USERNAME, MONGO_PASSWORD, MONGO_PORT, MONGO_DB } = process.env;
 
-const mongoConnectionString = `mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@estate-server-mongo-1:${MONGO_PORT}/${MONGO_DB}-new?authSource=admin&readPreference=primary&directConnection=true&ssl=false`;
+const mongoConnectionString = `mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@tg-estate-mongo-1:27017/${MONGO_DB}?authSource=admin&readPreference=primary&directConnection=true&ssl=false`;
 
 @Module({
   imports: [

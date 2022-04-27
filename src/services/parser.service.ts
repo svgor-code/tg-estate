@@ -1,10 +1,13 @@
 import got from 'got';
 import cheerio from 'cheerio';
 import { Injectable, Logger } from '@nestjs/common';
+import { ApartmentService } from './apartment.service';
 
 @Injectable()
 export class ParserService {
   private readonly logger = new Logger(ParserService.name);
+
+  constructor(private apartmentService: ApartmentService) {}
 
   async parseAvitoCatalog(): Promise<{
     apartments: any[];
@@ -47,6 +50,7 @@ export class ParserService {
         );
 
         const address = $(item).find('[class*=geo-address-]').text();
+        const district = $(item).find('[class*=geo-georeferences-]').text() || '';
         const house = address.split(',')[1]?.trim();
         const square = Number.parseFloat(
           title.split(', ')[1].split(' ')[0].split(',').join('.')
@@ -69,10 +73,13 @@ export class ParserService {
           square,
           floor,
           address,
+          district,
         };
       });
 
       const apartments = Array.from(items) || [];
+
+      await this.apartmentService.filterApartments(apartments)
 
       return {
         apartments,

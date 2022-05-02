@@ -10,7 +10,7 @@ async function bootstrap() {
       'http://0.0.0.0:8080',
     ],
   });
-  await app.listen(8181);
+  await app.listen(process.env.PORT);
 }
 
 bootstrap();

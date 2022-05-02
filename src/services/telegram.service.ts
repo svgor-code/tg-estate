@@ -22,6 +22,7 @@ import {
   MESSAGE_HEADER_FILTER_ROOMS,
   MESSAGE_HEADER_MAIN_MENU,
   MESSAGE_HEADER_SEARCH,
+  MESSAGE_HEADER_SUPPORT,
   MESSAGE_MAXPRICE_FILTER,
   MESSAGE_ROOMS_FILTER,
   MESSAGE_SEARCH_OFF,
@@ -59,12 +60,7 @@ export class TelegramService {
     polling: true,
   });
 
-  private chatId = 0;
   private currentState: BotStatesEnum = BotStatesEnum.NULL;
-  private user: CreatedUser | null = null;
-
-  private roomsFilter = new RoomsFilter();
-  private districtsFilter = new DistrictsFilter();
 
   constructor(private userService: UserService) {
     this.bot.setMyCommands([
@@ -89,50 +85,48 @@ export class TelegramService {
   async startListenCommands() {
     await this.bot.on('message', async (msg) => {
       const command = msg.text;
-      this.chatId = msg.chat.id;
-      this.user = await this.userService.getUserByChatId(this.chatId);
+      const chatId = msg.chat.id;
+      const user = await this.userService.getUserByChatId(chatId);
 
       try {
-        if (command === '/start') {
-          if (!this.user) {
-            await this.userService.create({
-              chatId: this.chatId,
-            });
+        if (command !== '/start' && !user) {
+          return await this.bot.sendMessage(
+            chatId,
+            'Введите команду /start для начала работы с ботом'
+          );
+        }
 
-            this.user = await this.userService.getUserByChatId(this.chatId);
+        if (command === '/start') {
+          if (!user) {
+            await this.userService.create({
+              chatId,
+            });
           }
 
-          await this.bot.sendMessage(this.chatId, MESSAGE_START, {
+          await this.bot.sendMessage(chatId, MESSAGE_START, {
             parse_mode: 'HTML',
           });
         }
 
         if (command === '/filters') {
-          if (this.user) {
-            await this.sendFiltersMenu();
-          } else {
-            await this.bot.sendMessage(
-              this.chatId,
-              'Введите команду /start для начала работы с ботом'
-            );
-          }
+          await this.sendFiltersMenu(user);
         }
 
         if (command === '/menu') {
-          await this.sendMainMenu();
+          await this.sendMainMenu(user);
         }
 
         if (command === '/search') {
-          await this.sendSearchMenu();
+          await this.sendSearchMenu(user);
         }
 
         if (command === '/support') {
-          await this.sendSupport();
+          await this.sendSupport(user);
         }
 
         if (this.currentState === BotStatesEnum.MAXPRICE) {
-          const maxPrice = parseFloat(command) * 1000000;
-          await this.saveMaxPriceFilter(maxPrice);
+          const maxPrice = parseFloat(command);
+          await this.saveMaxPriceFilter(user, maxPrice);
         }
 
         if (this.currentState === BotStatesEnum.FLOOR) {
@@ -140,6 +134,7 @@ export class TelegramService {
             .replace(/\s/g, '')
             .split('-');
           await this.saveFloorFilter(
+            user,
             Number(minFloorFilter),
             Number(maxFloorFilter)
           );
@@ -153,172 +148,196 @@ export class TelegramService {
   async startListenCallbacks() {
     await this.bot.on('callback_query', async (msg) => {
       const command = msg.data;
-      this.chatId = msg.message.chat.id;
-      this.user = await this.userService.getUserByChatId(this.chatId);
+      const chatId = msg.message.chat.id;
+      const user = await this.userService.getUserByChatId(chatId);
+
+      const roomsFilter = new RoomsFilter();
+      roomsFilter.setFilterTemplate(JSON.parse(user.roomsFilter || 'null'));
+
+      const districtsFilter = new DistrictsFilter();
+      districtsFilter.setFilterTemplate(
+        JSON.parse(user.districtsFilter || 'null')
+      );
 
       /* rooms filter */
       if (command === '/filter-rooms') {
-        const currentRoomsFilter =
-          JSON.parse(this.user.roomsFilter || 'null') ||
-          this.roomsFilter.filter;
-        this.roomsFilter.setFilterTemplate(currentRoomsFilter);
-
-        await this.sendRoomsFilter();
+        await this.sendRoomsFilter(user, roomsFilter);
       }
 
       if (/\/filter-rooms-[0-5]/.test(command)) {
         const roomsCount = command.match(/[0-5]/)[0];
-        this.roomsFilter.switchFilter(
-          roomsCount as unknown as keyof IRoomsFilter
+        roomsFilter.switchFilter(roomsCount as unknown as keyof IRoomsFilter);
+
+        const saveResult = await this.userService.updateRoomsFilter(
+          user._id,
+          roomsFilter.filter
         );
 
-        await this.sendRoomsFilter();
+        if (saveResult) {
+          await this.sendRoomsFilter(user, roomsFilter);
+        }
       }
 
       if (command === '/filter-rooms-save') {
         const saveResult = await this.userService.updateRoomsFilter(
-          this.user._id,
-          this.roomsFilter.filter
+          user._id,
+          roomsFilter.filter
         );
 
         if (saveResult) {
-          await this.sendSuccessfullyUpdate();
+          await this.sendSuccessfullyUpdate(user);
         }
       }
 
       /* maxprice filter */
       if (command === '/filter-maxprice') {
         this.currentState = BotStatesEnum.MAXPRICE;
-        await this.sendMaxPriceFilter();
+        await this.sendMaxPriceFilter(user);
       }
 
       /* floor filter */
       if (command === '/filter-floors') {
         this.currentState = BotStatesEnum.FLOOR;
-        await this.sendFloorFilter();
+        await this.sendFloorFilter(user);
       }
 
       /* districts filter */
       if (command === '/filter-districts') {
-        const currentDistrictsFilter =
-          JSON.parse(this.user.districtsFilter || 'null') ||
-          this.districtsFilter.filter;
-        this.districtsFilter.setFilterTemplate(currentDistrictsFilter);
-
-        await this.sendDistrictsFilter();
+        await this.sendDistrictsFilter(user, districtsFilter);
       }
 
       if (/\/filter-districts-[0-3]/.test(command)) {
         const district = command.match(/[0-3]/)[0];
-        this.districtsFilter.switchFilter(
+
+        districtsFilter.switchFilter(
           district as unknown as keyof IDistrictsFilter
         );
 
-        await this.sendDistrictsFilter();
+        const saveResult = await this.userService.updateDistrictsFilter(
+          user._id,
+          districtsFilter.filter
+        );
+
+        if (saveResult) {
+          await this.sendDistrictsFilter(user, districtsFilter);
+        }
       }
 
       if (command === '/filter-districts-save') {
         const saveResult = await this.userService.updateDistrictsFilter(
-          this.user._id,
-          this.districtsFilter.filter
+          user._id,
+          districtsFilter.filter
         );
 
         if (saveResult) {
-          await this.sendSuccessfullyUpdate();
+          await this.sendSuccessfullyUpdate(user);
         }
       }
 
       if (command === '/search-start') {
         const searchResult = await this.userService.switchSearch(
-          this.user._id,
+          user._id,
           true
         );
 
         if (searchResult) {
-          await this.sendSearchUpdate(true);
+          await this.sendSearchUpdate(true, user);
         }
       }
 
       if (command === '/search-stop') {
         const searchResult = await this.userService.switchSearch(
-          this.user._id,
+          user._id,
           false
         );
 
         if (searchResult) {
-          await this.sendSearchUpdate(false);
+          await this.sendSearchUpdate(false, user);
         }
       }
 
       if (command === '/menu') {
-        await this.sendMainMenu();
+        await this.sendMainMenu(user);
       }
 
       if (command === '/about') {
-        await this.sendAbout();
+        await this.sendAbout(user);
       }
 
       if (command === '/search') {
-        await this.sendSearchMenu();
+        await this.sendSearchMenu(user);
       }
 
       if (command === '/filters') {
-        await this.sendFiltersMenu();
+        await this.sendFiltersMenu(user);
       }
 
       if (command === '/support') {
-        await this.sendSupport();
+        await this.sendSupport(user);
       }
     });
   }
 
-  async saveMaxPriceFilter(maxPrice: number) {
+  async saveMaxPriceFilter(user: CreatedUser, maxPrice: number) {
     try {
-      await this.userService.updateMaxPriceFilter(this.user._id, maxPrice);
+      await this.userService.updateMaxPriceFilter(user._id, maxPrice);
 
       this.currentState = BotStatesEnum.NULL;
-      return await this.sendSuccessfullyUpdate();
+      return await this.sendSuccessfullyUpdate(user);
     } catch (error) {
       this.logger.error(error);
     }
   }
 
-  async saveFloorFilter(minFloorFilter: number, maxFloorFilter: number) {
+  async saveFloorFilter(
+    user: CreatedUser,
+    minFloorFilter: number,
+    maxFloorFilter: number
+  ) {
     const saveResult = await this.userService.updateFloorFilter(
-      this.user._id,
+      user._id,
       minFloorFilter,
       maxFloorFilter
     );
 
     if (saveResult) {
       this.currentState = BotStatesEnum.NULL;
-      return await this.sendSuccessfullyUpdate();
+      return await this.sendSuccessfullyUpdate(user);
     }
   }
 
-  async sendApartment(chatId: number, apartment: IApartment) {
+  async sendApartment(user: CreatedUser, apartment: IApartment) {
     try {
-      await this.bot.sendMessage(chatId, TEMPLATE_APARTMENT_MESSAGE(apartment), {
-        parse_mode: 'HTML',
-      });
+      await this.bot.sendMessage(
+        user.chatId,
+        TEMPLATE_APARTMENT_MESSAGE(apartment),
+        {
+          parse_mode: 'HTML',
+        }
+      );
 
-      await this.userService.addNewSendedApartment(chatId, apartment);
-    } catch(error) {
+      await this.userService.addNewSendedApartment(user.chatId, apartment);
+    } catch (error) {
       this.logger.error(error);
     }
   }
 
-  async sendMainMenu() {
-    return await this.bot.sendMessage(this.chatId, MESSAGE_HEADER_MAIN_MENU, {
-      parse_mode: 'HTML',
-      reply_markup: KEYBOARD_MAIN_MENU,
-    });
+  async sendMainMenu(user: CreatedUser) {
+    return await this.bot.sendPhoto(
+      user.chatId,
+      'https://caballero.ai/wp-content/uploads/2021/03/0c675a8e1061478d2b7b21b330093444.gif',
+      {
+        caption: MESSAGE_HEADER_MAIN_MENU,
+        parse_mode: 'HTML',
+        reply_markup: KEYBOARD_MAIN_MENU,
+      }
+    );
   }
 
-  async sendSearchMenu() {
+  async sendSearchMenu(user: CreatedUser) {
     return await this.bot.sendMessage(
-      this.chatId,
-      TEMPLATE_SEARCH_VALUE(MESSAGE_HEADER_SEARCH, this.user.isSearchActive),
+      user.chatId,
+      TEMPLATE_SEARCH_VALUE(MESSAGE_HEADER_SEARCH, user.isSearchActive),
       {
         parse_mode: 'HTML',
         reply_markup: KEYBOARD_SEARCH_MENU,
@@ -326,16 +345,19 @@ export class TelegramService {
     );
   }
 
-  async sendSupport() {
+  async sendSupport(user: CreatedUser) {
     return await this.bot.sendMessage(
-      this.chatId,
-      TEMPLATE_INFO_MESSAGE(MESSAGE_HEADER_SEARCH, MESSAGE_BODY_SUPPORT)
+      user.chatId,
+      TEMPLATE_INFO_MESSAGE(MESSAGE_HEADER_SUPPORT, MESSAGE_BODY_SUPPORT),
+      {
+        parse_mode: 'HTML',
+      }
     );
   }
 
-  async sendAbout() {
+  async sendAbout(user: CreatedUser) {
     return this.bot.sendMessage(
-      this.chatId,
+      user.chatId,
       TEMPLATE_INFO_MESSAGE(MESSAGE_HEADER_ABOUT, MESSAGE_BODY_ABOUT),
       {
         parse_mode: 'HTML',
@@ -344,16 +366,24 @@ export class TelegramService {
     );
   }
 
-  async sendFiltersMenu() {
+  async sendFiltersMenu(user: CreatedUser) {
+    const roomsFilter = new RoomsFilter();
+    roomsFilter.setFilterTemplate(JSON.parse(user.roomsFilter || 'null'));
+
+    const districtsFilter = new DistrictsFilter();
+    districtsFilter.setFilterTemplate(
+      JSON.parse(user.districtsFilter || 'null')
+    );
+
     const currentFilters: AllFiltersValues = {
-      district: this.getCurrentDistrictsFilter(),
-      rooms: this.getCurrentRoomsFilter(),
-      floor: this.getCurrentFloorFilter(),
-      maxprice: this.getCurrentMaxPriceFilter(),
+      rooms: this.getCurrentRoomsFilter(roomsFilter),
+      district: this.getCurrentDistrictsFilter(districtsFilter),
+      floor: this.getCurrentFloorFilter(user),
+      maxprice: this.getCurrentMaxPriceFilter(user),
     };
 
     return await this.bot.sendMessage(
-      this.chatId,
+      user.chatId,
       TEMPLATE_ALL_FILTERS_VALUE(
         MESSAGE_HEADER_FILTERS,
         currentFilters,
@@ -366,9 +396,9 @@ export class TelegramService {
     );
   }
 
-  async sendSuccessfullyUpdate() {
+  async sendSuccessfullyUpdate(user: CreatedUser) {
     return await this.bot.sendMessage(
-      this.chatId,
+      user.chatId,
       MESSAGE_SUCCESSFULLY_UPDATE,
       {
         parse_mode: 'HTML',
@@ -377,9 +407,9 @@ export class TelegramService {
     );
   }
 
-  async sendSearchUpdate(isSearchActive: boolean) {
+  async sendSearchUpdate(isSearchActive: boolean, user: CreatedUser) {
     return await this.bot.sendMessage(
-      this.chatId,
+      user.chatId,
       isSearchActive ? MESSAGE_SEARCH_ON : MESSAGE_SEARCH_OFF,
       {
         parse_mode: 'HTML',
@@ -388,11 +418,11 @@ export class TelegramService {
     );
   }
 
-  async sendRoomsFilter() {
-    const currentRoomsFilterMessage = this.getCurrentRoomsFilter();
+  async sendRoomsFilter(user: CreatedUser, roomsFilter: RoomsFilter) {
+    const currentRoomsFilterMessage = this.getCurrentRoomsFilter(roomsFilter);
 
     return await this.bot.sendMessage(
-      this.chatId,
+      user.chatId,
       TEMPLATE_FILTER_VALUE(
         MESSAGE_HEADER_FILTER_ROOMS,
         currentRoomsFilterMessage,
@@ -400,16 +430,20 @@ export class TelegramService {
       ),
       {
         parse_mode: 'HTML',
-        reply_markup: KEYBOARD_ROOMS_FILTER(this.roomsFilter.filter),
+        reply_markup: KEYBOARD_ROOMS_FILTER(roomsFilter.filter),
       }
     );
   }
 
-  async sendDistrictsFilter() {
-    const currentDistrictsFilterMessage = this.getCurrentDistrictsFilter();
+  async sendDistrictsFilter(
+    user: CreatedUser,
+    districtsFilter: DistrictsFilter
+  ) {
+    const currentDistrictsFilterMessage =
+      this.getCurrentDistrictsFilter(districtsFilter);
 
     return await this.bot.sendMessage(
-      this.chatId,
+      user.chatId,
       TEMPLATE_FILTER_VALUE(
         MESSAGE_HEADER_FILTER_DISTRICTS,
         currentDistrictsFilterMessage,
@@ -417,16 +451,16 @@ export class TelegramService {
       ),
       {
         parse_mode: 'HTML',
-        reply_markup: KEYBOARD_DISTRICTS_FILTER(this.districtsFilter.filter),
+        reply_markup: KEYBOARD_DISTRICTS_FILTER(districtsFilter.filter),
       }
     );
   }
 
-  async sendMaxPriceFilter() {
-    const currentMaxPriceFilterMessage = this.getCurrentMaxPriceFilter();
+  async sendMaxPriceFilter(user: CreatedUser) {
+    const currentMaxPriceFilterMessage = this.getCurrentMaxPriceFilter(user);
 
     return await this.bot.sendMessage(
-      this.chatId,
+      user.chatId,
       TEMPLATE_FILTER_VALUE(
         MESSAGE_HEADER_FILTER_MAXPRICE,
         currentMaxPriceFilterMessage,
@@ -438,11 +472,11 @@ export class TelegramService {
     );
   }
 
-  async sendFloorFilter() {
-    const currentFloorFilterMessage = this.getCurrentFloorFilter();
+  async sendFloorFilter(user: CreatedUser) {
+    const currentFloorFilterMessage = this.getCurrentFloorFilter(user);
 
     return await this.bot.sendMessage(
-      this.chatId,
+      user.chatId,
       TEMPLATE_FILTER_VALUE(
         MESSAGE_HEADER_FILTER_FlOOR,
         currentFloorFilterMessage,
@@ -454,12 +488,8 @@ export class TelegramService {
     );
   }
 
-  private getCurrentFloorFilter() {
-    if (!this.user) {
-      return null;
-    }
-
-    const { minFloorFilter, maxFloorFilter } = this.user;
+  private getCurrentFloorFilter(user: CreatedUser) {
+    const { minFloorFilter, maxFloorFilter } = user;
 
     if (!minFloorFilter || !maxFloorFilter) {
       return null;
@@ -468,12 +498,8 @@ export class TelegramService {
     return MESSAGE_CURRENT_FLOOR_FILTER(minFloorFilter, maxFloorFilter);
   }
 
-  private getCurrentMaxPriceFilter() {
-    if (!this.user) {
-      return null;
-    }
-
-    const { maxPriceFilter } = this.user;
+  private getCurrentMaxPriceFilter(user: CreatedUser) {
+    const { maxPriceFilter } = user;
 
     if (!maxPriceFilter) {
       return null;
@@ -482,41 +508,17 @@ export class TelegramService {
     return MESSAGE_CURRENT_MAXPRICE_FILTER(maxPriceFilter);
   }
 
-  private getCurrentRoomsFilter() {
-    if (!this.user) {
-      return null;
-    }
-
-    const { roomsFilter } = this.user;
-
-    if (!roomsFilter || !JSON.parse(roomsFilter)) {
-      return null;
-    }
-
-    const parsedRoomsFilter = JSON.parse(roomsFilter);
-
-    const activeRooms = Object.keys(parsedRoomsFilter).filter(
-      (room) => parsedRoomsFilter[room]
+  private getCurrentRoomsFilter(roomsFilter: RoomsFilter) {
+    const activeRooms = Object.keys(roomsFilter.filter).filter(
+      (room) => roomsFilter.filter[room]
     );
 
     return MESSAGE_CURRENT_ROOMS_FILTER(activeRooms);
   }
 
-  private getCurrentDistrictsFilter() {
-    if (!this.user) {
-      return null;
-    }
-
-    const { districtsFilter } = this.user;
-
-    if (!districtsFilter || !JSON.parse(districtsFilter)) {
-      return null;
-    }
-
-    const parsedDistrictsFilter = JSON.parse(districtsFilter);
-
-    const activeDistricts = Object.keys(parsedDistrictsFilter).filter(
-      (room) => parsedDistrictsFilter[room]
+  private getCurrentDistrictsFilter(districtFilter: DistrictsFilter) {
+    const activeDistricts = Object.keys(districtFilter.filter).filter(
+      (room) => districtFilter.filter[room]
     );
 
     return MESSAGE_CURRENT_DISTRICTS_FILTER(activeDistricts);

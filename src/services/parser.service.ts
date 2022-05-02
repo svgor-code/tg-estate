@@ -50,15 +50,25 @@ export class ParserService {
         );
 
         const address = $(item).find('[class*=geo-address-]').text();
-        const district = $(item).find('[class*=geo-georeferences-]').text() || '';
+        const district =
+          $(item).find('[class*=geo-georeferences-]').text() || '';
         const house = address.split(',')[1]?.trim();
         const square = Number.parseFloat(
           title.split(', ')[1].split(' ')[0].split(',').join('.')
         );
-        const roomsData = title.split(',')[0];
-        const rooms = Number.parseInt(
-          roomsData.includes('-к.') ? roomsData.split('-')[0] : roomsData
-        );
+
+        const roomsData = title.split(',')[0].toLowerCase();
+
+        let rooms;
+
+        if (roomsData.includes('-к.')) {
+          rooms = Number.parseInt(roomsData.split('-')[0]);
+        } else if (roomsData.includes('студия')) {
+          rooms = 0;
+        } else {
+          Number.parseInt(roomsData);
+        }
+
         const floor = Number.parseInt(title.split(', ')[2].split('/')[0]);
         const pricePerMeter = Math.floor(price / square);
 
@@ -69,17 +79,17 @@ export class ParserService {
           price,
           pricePerMeter,
           house,
-          rooms: rooms || 1,
+          rooms: rooms || 0,
           square,
           floor,
           address,
-          district,
+          district: district.split(' ')[1] || '',
         };
       });
 
       const apartments = Array.from(items) || [];
 
-      await this.apartmentService.filterApartments(apartments)
+      await this.apartmentService.filterApartments(apartments);
 
       return {
         apartments,

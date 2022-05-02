@@ -23,7 +23,7 @@ export class User {
   @Prop({ type: Number, required: true, default: 1 })
   minFloorFilter: number;
 
-  @Prop({ type: Number, required: true, default: 32 })
+  @Prop({ type: Number, required: true, default: 24 })
   maxFloorFilter: number;
 
   @Prop({ type: [{ type: String, required: false }] })

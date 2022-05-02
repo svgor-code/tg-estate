@@ -110,7 +110,7 @@ export const KEYBOARD_MAIN_MENU = {
       { text: '🔎 Поиск', callback_data: '/search' },
     ],
     [
-      { text: '🤖 О боте', callback_data: '/about' },
+      { text: '🤖 Инструкция', callback_data: '/about' },
       { text: '📧 Поддержка', callback_data: '/support' },
     ],
   ],

@@ -20,7 +20,11 @@ export class DistrictsFilter {
     this._filter[roomsCount] = !oldValue;
   }
 
-  public setFilterTemplate(filterTemplete: IDistrictsFilter) {
+  public setFilterTemplate(filterTemplete?: IDistrictsFilter | null) {
+    if (!filterTemplete) {
+      return;
+    }
+
     this._filter = filterTemplete;
   }
 

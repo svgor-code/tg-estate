@@ -33,7 +33,11 @@ export class RoomsFilter {
     this._filter[roomsCount] = !oldValue;
   }
 
-  public setFilterTemplate(filterTemplete: IRoomsFilter) {
+  public setFilterTemplate(filterTemplete?: IRoomsFilter | null) {
+    if (!filterTemplete) {
+      return;
+    }
+
     this._filter = filterTemplete;
   }
 

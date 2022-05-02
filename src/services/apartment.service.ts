@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { DISTRICTS_NAMES } from 'src/enities/DistrictsFilter';
 import { IApartment } from 'src/interfaces/IApartment';
 import { TelegramService } from './telegram.service';
 import { UserService } from './user.service';
@@ -25,7 +26,6 @@ export class ApartmentService {
 
         users.forEach(async (user) => {
           const {
-            chatId,
             minFloorFilter,
             maxFloorFilter,
             maxPriceFilter,
@@ -35,20 +35,40 @@ export class ApartmentService {
           } = user;
 
           if (
-            floor >= minFloorFilter &&
-            floor <= maxFloorFilter &&
-            price <= maxPriceFilter &&
+            this.filterByPrimitive(floor, minFloorFilter, 'gte') &&
+            this.filterByPrimitive(floor, maxFloorFilter, 'lte') &&
+            this.filterByPrimitive(price, maxPriceFilter, 'lte') &&
             this.filterByRooms(roomsFilter, rooms) &&
             this.filterByDistrict(districtsFilter, district) &&
             !sendedApartments.includes(platformId)
           ) {
-            await this.telegramService.sendApartment(chatId, apartment);
+            await this.telegramService.sendApartment(user, apartment);
           }
         });
       });
     } catch (error) {
       this.logger.error(error);
       return { success: false, error };
+    }
+  }
+
+  private filterByPrimitive(
+    value: number,
+    filterValue: number,
+    option: 'lte' | 'gte'
+  ) {
+    if (!filterValue && filterValue !== 0) {
+      return true;
+    }
+
+    switch (option) {
+      case 'gte':
+        return value >= filterValue;
+      case 'lte':
+        return value <= filterValue;
+
+      default:
+        return false;
     }
   }
 
@@ -59,14 +79,9 @@ export class ApartmentService {
 
     if (!roomsFilter) return true;
 
-    const filterKey =
-      rooms > 5 ? '5' : this.getKeyByValue(roomsFilter, rooms || 'студия');
+    const filterKey = rooms > 5 ? '5' : `${rooms}`;
 
-    if (roomsFilter[filterKey]) {
-      return true;
-    }
-
-    return false;
+    return roomsFilter[filterKey];
   }
 
   private filterByDistrict(districtsFilterJSON: string, district?: string) {
@@ -76,13 +91,9 @@ export class ApartmentService {
 
     if (!districtsFilter) return true;
 
-    const filterKey = this.getKeyByValue(districtsFilter, district);
+    const filterKey = this.getKeyByValue(DISTRICTS_NAMES, district);
 
-    if (districtsFilter[filterKey]) {
-      return true;
-    }
-
-    return false;
+    return districtsFilter[filterKey];
   }
 
   private getKeyByValue(object, value) {

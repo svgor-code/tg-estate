@@ -19,7 +19,7 @@ export class UserService {
   }
 
   async findAll(filter: Partial<UserFilters>): Promise<CreatedUser[]> {
-    const users = await this.userModel.find({ filter }).exec();
+    const users = await this.userModel.find({ ...filter }).exec();
     return users;
   }
 

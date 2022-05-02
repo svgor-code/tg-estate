@@ -23,7 +23,7 @@ export class TaskService {
     private parserService: ParserService,
   ) {}
 
-  // @Cron('50 * * * * *')
+  @Cron('50 * * * * *')
   startParseAvitoCatalog() {
     this.parserService.parseAvitoCatalog();
   }

@@ -28,6 +28,9 @@ export class User {
 
   @Prop({ type: [{ type: String, required: false }] })
   sendedApartments: string[];
+
+  @Prop({ type: String, required: true, default: 'user' })
+  role: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

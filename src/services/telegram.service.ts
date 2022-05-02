@@ -151,6 +151,13 @@ export class TelegramService {
       const chatId = msg.message.chat.id;
       const user = await this.userService.getUserByChatId(chatId);
 
+      if (command !== '/start' && !user) {
+        return await this.bot.sendMessage(
+          chatId,
+          'Введите команду /start для начала работы с ботом'
+        );
+      }
+
       const roomsFilter = new RoomsFilter();
       roomsFilter.setFilterTemplate(JSON.parse(user.roomsFilter || 'null'));
 

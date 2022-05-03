@@ -87,7 +87,9 @@ export class ParserService {
         };
       });
 
-      const apartments = Array.from(items) || [];
+      const itemsToAdd = Array.from(items).filter((item) => item.price && item.price > 100000);
+
+      const apartments = Array.from(itemsToAdd) || [];
 
       await this.apartmentService.filterApartments(apartments);
 

@@ -21,8 +21,8 @@ export const MESSAGE_DISTRICTS_FILTER = 'Выберите районы:';
 
 export const MESSAGE_SUCCESSFULLY_UPDATE = (isSearchActive: boolean) =>
   `Успешно сохранено! \n\n${
-    !isSearchActive &&
-    'Для включения оповещений перейдите в Меню ➡️ /menu, а затем в раздел ✉️ Оповещения'
+    !isSearchActive ?
+    'Для включения оповещений перейдите в Меню ➡️ /menu, а затем в раздел ✉️ Оповещения' : ''
   }`;
 export const MESSAGE_SEARCH_ON = 'Оповещения включены';
 export const MESSAGE_SEARCH_OFF = 'Оповещения остановлены';

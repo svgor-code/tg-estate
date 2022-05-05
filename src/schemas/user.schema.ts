@@ -26,6 +26,12 @@ export class User {
   @Prop({ type: Number, required: true, default: 24 })
   maxFloorFilter: number;
 
+  @Prop({ type: Number, required: false })
+  minSquareFilter: number;
+
+  @Prop({ type: Number, required: false })
+  maxSquareFilter: number;
+
   @Prop({ type: [{ type: String, required: false }] })
   sendedApartments: string[];
 

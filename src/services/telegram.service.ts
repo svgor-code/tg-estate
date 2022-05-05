@@ -12,6 +12,7 @@ import {
   MESSAGE_CURRENT_FLOOR_FILTER,
   MESSAGE_CURRENT_MAXPRICE_FILTER,
   MESSAGE_CURRENT_ROOMS_FILTER,
+  MESSAGE_CURRENT_SQUARE_FILTER,
   MESSAGE_DISTRICTS_FILTER,
   MESSAGE_FLOOR_FILTER,
   MESSAGE_HEADER_ABOUT,
@@ -20,6 +21,7 @@ import {
   MESSAGE_HEADER_FILTER_FlOOR,
   MESSAGE_HEADER_FILTER_MAXPRICE,
   MESSAGE_HEADER_FILTER_ROOMS,
+  MESSAGE_HEADER_FILTER_SQUARE,
   MESSAGE_HEADER_MAIN_MENU,
   MESSAGE_HEADER_SEARCH,
   MESSAGE_HEADER_SUPPORT,
@@ -27,6 +29,7 @@ import {
   MESSAGE_ROOMS_FILTER,
   MESSAGE_SEARCH_OFF,
   MESSAGE_SEARCH_ON,
+  MESSAGE_SQUARE_FILTER,
   MESSAGE_START,
   MESSAGE_SUCCESSFULLY_UPDATE,
   MESSAGE_TG_MENU_FILTERS,
@@ -139,6 +142,17 @@ export class TelegramService {
             Number(maxFloorFilter)
           );
         }
+
+        if (this.currentState === BotStatesEnum.SQUARE) {
+          const [minSquareFilter, maxSquareFilter] = command
+            .replace(/\s/g, '')
+            .split('-');
+          await this.saveSquareFilter(
+            user,
+            Number(minSquareFilter),
+            Number(maxSquareFilter)
+          );
+        }
       } catch (error) {
         this.logger.error(error);
       }
@@ -200,6 +214,12 @@ export class TelegramService {
       if (command === '/filter-maxprice') {
         this.currentState = BotStatesEnum.MAXPRICE;
         await this.sendMaxPriceFilter(user);
+      }
+
+      /* square filter */
+      if (command === '/filter-square') {
+        this.currentState = BotStatesEnum.SQUARE;
+        await this.sendSquareFilter(user);
       }
 
       /* floor filter */
@@ -313,6 +333,23 @@ export class TelegramService {
     }
   }
 
+  async saveSquareFilter(
+    user: CreatedUser,
+    minSquareFilter: number,
+    maxSquareFilter: number
+  ) {
+    const saveResult = await this.userService.updateSquareFilter(
+      user._id,
+      minSquareFilter,
+      maxSquareFilter
+    );
+
+    if (saveResult) {
+      this.currentState = BotStatesEnum.NULL;
+      return await this.sendSuccessfullyUpdate(user);
+    }
+  }
+
   async sendApartment(user: CreatedUser, apartment: IApartment) {
     try {
       await this.bot.sendMessage(
@@ -387,6 +424,7 @@ export class TelegramService {
       district: this.getCurrentDistrictsFilter(districtsFilter),
       floor: this.getCurrentFloorFilter(user),
       maxprice: this.getCurrentMaxPriceFilter(user),
+      square: this.getCurrentSquareFilter(user),
     };
 
     return await this.bot.sendMessage(
@@ -406,7 +444,7 @@ export class TelegramService {
   async sendSuccessfullyUpdate(user: CreatedUser) {
     return await this.bot.sendMessage(
       user.chatId,
-      MESSAGE_SUCCESSFULLY_UPDATE,
+      MESSAGE_SUCCESSFULLY_UPDATE(user.isSearchActive),
       {
         parse_mode: 'HTML',
         reply_markup: KEYBOARD_BACK_TO_FILTER,
@@ -495,6 +533,22 @@ export class TelegramService {
     );
   }
 
+  async sendSquareFilter(user: CreatedUser) {
+    const currentSquareFilterMessage = this.getCurrentSquareFilter(user);
+
+    return await this.bot.sendMessage(
+      user.chatId,
+      TEMPLATE_FILTER_VALUE(
+        MESSAGE_HEADER_FILTER_SQUARE,
+        currentSquareFilterMessage,
+        MESSAGE_SQUARE_FILTER
+      ),
+      {
+        parse_mode: 'HTML',
+      }
+    );
+  }
+
   private getCurrentFloorFilter(user: CreatedUser) {
     const { minFloorFilter, maxFloorFilter } = user;
 
@@ -503,6 +557,16 @@ export class TelegramService {
     }
 
     return MESSAGE_CURRENT_FLOOR_FILTER(minFloorFilter, maxFloorFilter);
+  }
+
+  private getCurrentSquareFilter(user: CreatedUser) {
+    const { minSquareFilter, maxSquareFilter } = user;
+
+    if (!minSquareFilter || !maxSquareFilter) {
+      return null;
+    }
+
+    return MESSAGE_CURRENT_SQUARE_FILTER(minSquareFilter, maxSquareFilter);
   }
 
   private getCurrentMaxPriceFilter(user: CreatedUser) {

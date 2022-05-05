@@ -20,6 +20,7 @@ export const KEYBOARD_FILTERS_START = {
     [
       { text: '🌇 Район', callback_data: '/filter-districts' },
       { text: '🪜 Этаж', callback_data: '/filter-floors' },
+      { text: '📐 Площадь', callback_data: '/filter-square' },
     ],
     [{ text: '⤴️ Меню', callback_data: '/menu' }],
   ],

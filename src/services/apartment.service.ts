@@ -22,12 +22,14 @@ export class ApartmentService {
       });
 
       apartments.forEach(async (apartment) => {
-        const { price, platformId, floor, rooms, district } = apartment;
+        const { price, platformId, floor, square, rooms, district } = apartment;
 
         users.forEach(async (user) => {
           const {
             minFloorFilter,
             maxFloorFilter,
+            minSquareFilter,
+            maxSquareFilter,
             maxPriceFilter,
             districtsFilter,
             roomsFilter,
@@ -37,6 +39,8 @@ export class ApartmentService {
           if (
             this.filterByPrimitive(floor, minFloorFilter, 'gte') &&
             this.filterByPrimitive(floor, maxFloorFilter, 'lte') &&
+            this.filterByPrimitive(square, minSquareFilter, 'gte') &&
+            this.filterByPrimitive(square, maxSquareFilter, 'lte') &&
             this.filterByPrimitive(price, maxPriceFilter, 'lte') &&
             this.filterByRooms(roomsFilter, rooms) &&
             this.filterByDistrict(districtsFilter, district) &&

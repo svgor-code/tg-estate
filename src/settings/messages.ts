@@ -7,6 +7,7 @@ export type AllFiltersValues = {
   floor: string | null;
   rooms: string | null;
   district: string | null;
+  square: string | null;
 };
 
 export const MESSAGE_START =
@@ -18,7 +19,11 @@ export const MESSAGE_CURRENT_FILTERS =
 export const MESSAGE_ROOMS_FILTER = 'Выберите количество комнат:';
 export const MESSAGE_DISTRICTS_FILTER = 'Выберите районы:';
 
-export const MESSAGE_SUCCESSFULLY_UPDATE = 'Успешно сохранено!';
+export const MESSAGE_SUCCESSFULLY_UPDATE = (isSearchActive: boolean) =>
+  `Успешно сохранено! \n\n${
+    !isSearchActive &&
+    'Для включения оповещений перейдите в Меню ➡️ /menu, а затем в раздел ✉️ Оповещения'
+  }`;
 export const MESSAGE_SEARCH_ON = 'Оповещения включены';
 export const MESSAGE_SEARCH_OFF = 'Оповещения остановлены';
 
@@ -26,7 +31,10 @@ export const MESSAGE_MAXPRICE_FILTER =
   'Введите максимальную цену квартиры, по которой будут приходить сигналы \n\nПример сообщения: \n<strong>3000000</strong>';
 
 export const MESSAGE_FLOOR_FILTER =
-  'Введите диапазон этажей, по которой будут приходить сигналы, через дефис. \n\nПример сообщения: <strong>2-24</strong>';
+  'Введите диапазон этажей, по которому будут приходить сигналы, через дефис. \n\nПример сообщения: <strong>2-24</strong>';
+
+export const MESSAGE_SQUARE_FILTER =
+  'Введите диапазон площади, по которому будут приходить сигналы, через дефис. \n\nПример сообщения: <strong>45-67</strong>';
 
 export const MESSAGE_TG_MENU_MENU = `📋 Меню`;
 export const MESSAGE_TG_MENU_FILTERS = `⚙️ Мои фильтры`;
@@ -37,6 +45,7 @@ export const MESSAGE_HEADER_FILTER_FlOOR = `⚙️ Этаж квартиры`;
 export const MESSAGE_HEADER_FILTER_DISTRICTS = `⚙️ Районы`;
 export const MESSAGE_HEADER_FILTER_ROOMS = `⚙️ Количество комнат`;
 export const MESSAGE_HEADER_FILTER_MAXPRICE = `⚙️ Цена объекта`;
+export const MESSAGE_HEADER_FILTER_SQUARE = `⚙️ Площадь`;
 
 export const MESSAGE_HEADER_MAIN_MENU = `📋 <strong>Меню</strong>`;
 export const MESSAGE_HEADER_SEARCH = `✉️ <strong>Оповещения</strong>`;
@@ -54,6 +63,11 @@ export const MESSAGE_CURRENT_FLOOR_FILTER = (minFloorFilter, maxFloorFilter) =>
 export const MESSAGE_CURRENT_MAXPRICE_FILTER = (maxPriceFilter) => {
   return `<strong>до ${maxPriceFilter.toLocaleString('ru')} руб.</strong>`;
 };
+
+export const MESSAGE_CURRENT_SQUARE_FILTER = (
+  minSquareFilter,
+  maxSquareFilter
+) => `<strong>${minSquareFilter}-${maxSquareFilter} м²</strong>`;
 
 export const MESSAGE_CURRENT_ROOMS_FILTER = (activeRooms) => {
   const roomsList = activeRooms.map((room) => ROOMS_NAMES[room]).join(', ');
@@ -87,7 +101,9 @@ export const TEMPLATE_ALL_FILTERS_VALUE = (
     filters.maxprice || '-'
   } \n\n - Районы: ${filters.district || '-'} \n\n - Этаж квартиры: ${
     filters.floor || '-'
-  } \n\n - Количество комнат: ${filters.rooms || '-'} \n\n${body ? body : ''}`;
+  } \n\n - Количество комнат: ${filters.rooms || '-'} \n\n - Площадь: ${
+    filters.square || '-'
+  } \n\n${body ? body : ''}`;
 };
 
 export const TEMPLATE_FILTER_VALUE = (
@@ -95,9 +111,9 @@ export const TEMPLATE_FILTER_VALUE = (
   currentValue: string,
   body: string
 ) => {
-  return `${header} \n\n ${
-    currentValue ? `Текущее значение: ${currentValue}` : ''
-  } \n\n${body}`;
+  return `${header} \n\n${
+    currentValue ? `Текущее значение: ${currentValue}\n\n` : ''
+  }${body}`;
 };
 
 export const TEMPLATE_INFO_MESSAGE = (header: string, body: string) => {

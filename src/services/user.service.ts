@@ -33,7 +33,10 @@ export class UserService {
     return user;
   }
 
-  async addNewSendedApartment(chatId: number, apartment: IApartment): Promise<CreatedUser> {
+  async addNewSendedApartment(
+    chatId: number,
+    apartment: IApartment
+  ): Promise<CreatedUser> {
     const { platformId } = apartment;
     const { _id, sendedApartments } = await this.getUserByChatId(chatId);
     const newSendedApartments = [...(sendedApartments || []), platformId];
@@ -140,6 +143,27 @@ export class UserService {
         $set: {
           minFloorFilter,
           maxFloorFilter,
+        },
+      },
+      {
+        new: true,
+      }
+    );
+
+    return updatedUser;
+  }
+
+  async updateSquareFilter(
+    userId: string,
+    minSquareFilter: number,
+    maxSquareFilter: number
+  ): Promise<CreatedUser> {
+    const updatedUser = await this.userModel.findByIdAndUpdate(
+      userId,
+      {
+        $set: {
+          minSquareFilter,
+          maxSquareFilter,
         },
       },
       {

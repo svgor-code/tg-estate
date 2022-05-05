@@ -107,7 +107,7 @@ export const KEYBOARD_MAIN_MENU = {
   inline_keyboard: [
     [
       { text: '⚙️ Мои фильтры', callback_data: '/filters' },
-      { text: '🔎 Поиск', callback_data: '/search' },
+      { text: '✉️ Оповещения', callback_data: '/search' },
     ],
     [
       { text: '🤖 Инструкция', callback_data: '/about' },

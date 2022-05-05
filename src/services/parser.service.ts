@@ -18,7 +18,7 @@ export class ParserService {
       this.logger.log('avito catalog parser started');
 
       const response = await got.get(
-        'https://www.avito.ru/ulyanovsk/kvartiry/prodam/vtorichka-ASgBAQICAUSSA8YQAUDmBxSMUg?s=104',
+        'https://www.avito.ru/ulyanovsk/kvartiry/prodam/vtorichka-ASgBAQICAUSSA8YQAUDmBxSMUg?f=ASgBAQICAUSSA8YQA0DmBxSMUo7eDhQCkN4OFAI&s=104',
         {
           http2: true,
           headers: {

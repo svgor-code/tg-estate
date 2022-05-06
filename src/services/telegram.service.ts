@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import { Injectable, Logger } from '@nestjs/common';
 import TelegramBot from 'node-telegram-bot-api';
 import { UserService } from './user.service';
@@ -31,6 +33,7 @@ import {
   MESSAGE_SEARCH_ON,
   MESSAGE_SQUARE_FILTER,
   MESSAGE_START,
+  MESSAGE_START_2,
   MESSAGE_SUCCESSFULLY_UPDATE,
   MESSAGE_TG_MENU_FILTERS,
   MESSAGE_TG_MENU_MENU,
@@ -109,6 +112,16 @@ export class TelegramService {
           await this.bot.sendMessage(chatId, MESSAGE_START, {
             parse_mode: 'HTML',
           });
+
+          await this.bot.sendMessage(chatId, MESSAGE_START_2, {
+            parse_mode: 'HTML',
+          });
+
+          const instructionsVideo = fs.createReadStream(
+            path.join(__dirname, '../../files/instructions.mp4')
+          );
+
+          await this.bot.sendVideo(chatId, instructionsVideo);
         }
 
         if (command === '/filters') {

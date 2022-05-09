@@ -92,6 +92,9 @@ export class TelegramService {
     await this.bot.on('message', async (msg) => {
       const command = msg.text;
       const chatId = msg.chat.id;
+      const id = msg.from.id;
+      const username = msg.from.username;
+
       const user = await this.userService.getUserByChatId(chatId);
 
       try {
@@ -102,10 +105,19 @@ export class TelegramService {
           );
         }
 
+        if (user && (!user.tgUserId || !user.tgUserName)) {
+          await this.userService.update(user._id, {
+            tgUserId: id,
+            tgUserName: username,
+          });
+        }
+
         if (command === '/start') {
           if (!user) {
             await this.userService.create({
               chatId,
+              tgUserId: id,
+              tgUserName: username,
             });
           }
 

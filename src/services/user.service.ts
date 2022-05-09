@@ -1,5 +1,5 @@
 import { Model } from 'mongoose';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { User, UserDocument } from 'src/schemas/user.schema';
 import { CreateUserDto } from 'src/dto/user/CreateUserDto';
@@ -7,15 +7,41 @@ import { IRoomsFilter } from 'src/interfaces/IRoomsFilter';
 import { CreatedUser, UserFilters } from 'src/interfaces/User';
 import { IDistrictsFilter } from 'src/interfaces/IDistrictsFilter';
 import { IApartment } from 'src/interfaces/IApartment';
+import { UpdateUserDto } from 'src/dto/user/UpdateUserDto';
 
 @Injectable()
 export class UserService {
+  private readonly logger = new Logger(UserService.name);
+
   constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
 
   async create(createUserDto: CreateUserDto): Promise<CreatedUser> {
     const createdStreet = await this.userModel.create(createUserDto);
 
     return createdStreet.save();
+  }
+
+  async update(
+    userId: string,
+    updateUserDto: UpdateUserDto
+  ): Promise<CreatedUser> {
+    try {
+      const updatedUser = await this.userModel.findByIdAndUpdate(
+        userId,
+        {
+          $set: {
+            ...updateUserDto,
+          },
+        },
+        {
+          new: true,
+        }
+      );
+
+      return updatedUser;
+    } catch (error) {
+      this.logger.error(error);
+    }
   }
 
   async findAll(filter: Partial<UserFilters>): Promise<CreatedUser[]> {

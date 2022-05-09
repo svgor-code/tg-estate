@@ -8,6 +8,12 @@ export class User {
   @Prop({ type: Number, required: true, unique: true })
   chatId: number;
 
+  @Prop({ type: Number, required: false })
+  tgUserId: number;
+
+  @Prop({ type: String, required: false })
+  tgUserName: string;
+
   @Prop({ type: Boolean, required: true, default: false })
   isSearchActive: boolean;
 

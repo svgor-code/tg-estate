@@ -1,6 +1,7 @@
 import { DISTRICTS_NAMES } from 'src/enities/DistrictsFilter';
 import { ROOMS_NAMES } from 'src/enities/RoomsFilter';
 import { IApartment } from 'src/interfaces/IApartment';
+import { CreatedSubscription } from 'src/interfaces/Subscription';
 
 export type AllFiltersValues = {
   maxprice: string | null;
@@ -13,7 +14,8 @@ export type AllFiltersValues = {
 export const MESSAGE_START =
   'Здравствуйте! Я бот для поиска квартир. \n\nКак я работаю: \n\n - 24/7 анализирую вторичные квартиры на Авито; \n - Обновляю базу 1 раз в минуту \n - Даю возможность настроить сигналы под себя с помощью фильтров прямо внутри бота \n\nДля начала работы с ботом нажмите ➡️ /menu и настройте параметры в разделе <strong>⚙️ Мои фильтры</strong>, затем запустите оповещения в разделе <strong>✉️ Оповещения</strong> \n\nПосле первого запуска бота вы получите ссылки на недавно опубликованные объявления, подходящие под ваши фильтры';
 
-export const MESSAGE_START_2 = '📹 Смотрите подробную видео инструкцию о том как начать работу с ботом 👇';
+export const MESSAGE_START_2 =
+  '📹 Смотрите подробную видео инструкцию о том как начать работу с ботом 👇';
 
 export const MESSAGE_CURRENT_FILTERS =
   'Выберите одну из опций, для настройки фильтров:';
@@ -23,8 +25,9 @@ export const MESSAGE_DISTRICTS_FILTER = 'Выберите районы:';
 
 export const MESSAGE_SUCCESSFULLY_UPDATE = (isSearchActive: boolean) =>
   `Успешно сохранено! \n\n${
-    !isSearchActive ?
-    'Для включения оповещений перейдите в Меню ➡️ /menu, а затем в раздел ✉️ Оповещения' : ''
+    !isSearchActive
+      ? 'Для включения оповещений перейдите в Меню ➡️ /menu, а затем в раздел ✉️ Оповещения'
+      : ''
   }`;
 export const MESSAGE_SEARCH_ON = 'Оповещения включены';
 export const MESSAGE_SEARCH_OFF = 'Оповещения остановлены';
@@ -41,6 +44,8 @@ export const MESSAGE_SQUARE_FILTER =
 export const MESSAGE_TG_MENU_MENU = `📋 Меню`;
 export const MESSAGE_TG_MENU_FILTERS = `⚙️ Мои фильтры`;
 export const MESSAGE_TG_MENU_SUPPORT = `📧 Поддержка`;
+export const MESSAGE_TG_MENU_SUBSCRIPTION = `⭐ Моя подписка`;
+export const MESSAGE_TG_MENU_TARIFFS = `🚀 Тарифы`;
 
 export const MESSAGE_HEADER_FILTERS = `⚙️ Текущие параметры фильтров`;
 export const MESSAGE_HEADER_FILTER_FlOOR = `⚙️ Этаж квартиры`;
@@ -53,6 +58,9 @@ export const MESSAGE_HEADER_MAIN_MENU = `📋 <strong>Меню</strong>`;
 export const MESSAGE_HEADER_SEARCH = `✉️ <strong>Оповещения</strong>`;
 export const MESSAGE_HEADER_ABOUT = `🤖 <strong>Инструкция</strong>`;
 export const MESSAGE_HEADER_SUPPORT = `📧 <strong>Поддержка</strong>`;
+export const MESSAGE_HEADER_SUBSCRIPTION = `⭐ <strong>Моя подписка</strong>`;
+export const MESSAGE_HEADER_TARIFFS = `🚀 <strong>Тарифы</strong>`;
+export const MESSAGE_HEADER_PAY_SUBSCRIPTION = `💳 <strong>Оплата подписки</strong>`;
 
 export const MESSAGE_BODY_SUPPORT =
   'Нашли ошибку в работе бота? Пишите сюда: @peschanik23';
@@ -126,4 +134,35 @@ export const TEMPLATE_APARTMENT_MESSAGE = (apartment: IApartment) => {
   const { title, address, price, pricePerMeter, href } = apartment;
 
   return `${title} \nАдрес: ${address} \nЦена: ${price} рублей (${pricePerMeter} руб. за кв.м.) \nСсылка: ${href}`;
+};
+
+export const TEMPLATE_SUBSCRIPTION_MESSAGE = (
+  subscriptionName: string,
+  endedAt: string
+) => {
+  return `<strong>Тариф: </strong>${subscriptionName}\n<strong>Истекает: ${endedAt}</strong>`;
+};
+
+export const TEMPLATE_TARIFFS_MESSAGE = (subscriptionsNames: string[]) => {
+  const tariffsText = subscriptionsNames.join('\n');
+
+  return `${MESSAGE_HEADER_TARIFFS}\n\nНотифик доступен по подписке в ${subscriptionsNames.length} тарифах.\n\n${tariffsText}\n\nДля всех новых пользователей <strong>1 ДЕНЬ БЕСЛАТНО</strong>.\n\nОплатить подписку можно прямо в боте по истечении пробного периода. Оплатить можно картой.\n\nВы сможете отменить подписку в любое время.\n\nО статусе текущей подписки можно узнать по команде /subscription.`;
+};
+
+export const TEMPLATE_PAY_SUBSCRIPTION_MESSAGE = (
+  subscriptionsNames: string[]
+) => {
+  const tariffsText = subscriptionsNames.join('\n');
+
+  return `${MESSAGE_HEADER_PAY_SUBSCRIPTION}\n\nОплатите подписку картой прямо в боте.`;
+};
+
+export const TEMPLATE_INVOICE_SUBSCRIPTION_DESCRIPTION = (
+  subscription: CreatedSubscription
+) => {
+  const months = subscription.days / 31;
+
+  return `Данная подписка предоставляет доступ к оповещениям на ${
+    months >= 1 ? `${months} месяц(-ев)` : `${subscription.days} дней(-я)`
+  }`;
 };

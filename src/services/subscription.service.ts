@@ -7,7 +7,10 @@ import {
 } from 'src/schemas/subscription.schema';
 import { CreateSubscriptionDto } from 'src/dto/subscription/CreateSubscriptionDto';
 import { UpdateSubscriptionDto } from 'src/dto/subscription/UpdateSubscriptionDto';
-import { CreatedSubscription } from 'src/interfaces/Subscription';
+import {
+  CreatedSubscription,
+  SubscriptionFilter,
+} from 'src/interfaces/Subscription';
 
 @Injectable()
 export class SubscriptionService {
@@ -16,8 +19,8 @@ export class SubscriptionService {
     private subscriptionModel: Model<SubscriptionDocument>
   ) {}
 
-  async findAll(): Promise<CreatedSubscription[]> {
-    return await this.subscriptionModel.find().exec();
+  async findAll(filters?: SubscriptionFilter): Promise<CreatedSubscription[]> {
+    return await this.subscriptionModel.find({ ...(filters || {}) }).exec();
   }
 
   async getOne(id: string): Promise<CreatedSubscription> {

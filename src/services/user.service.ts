@@ -59,6 +59,16 @@ export class UserService {
     return user;
   }
 
+  async getUserByTelegramId(tgUserId: number): Promise<CreatedUser> {
+    const user = await this.userModel
+      .findOne({
+        tgUserId,
+      })
+      .exec();
+
+    return user;
+  }
+
   async addNewSendedApartment(
     chatId: number,
     apartment: IApartment

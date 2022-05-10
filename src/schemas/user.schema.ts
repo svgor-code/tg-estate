@@ -48,7 +48,7 @@ export class User {
   @Prop({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'UserSubscription',
-    required: true,
+    required: false,
     default: null,
   })
   subscription: UserSubscription;

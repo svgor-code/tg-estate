@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { Injectable, Logger } from '@nestjs/common';
-import TelegramBot from 'node-telegram-bot-api';
+import TelegramBot, { LabeledPrice } from 'node-telegram-bot-api';
 import { UserService } from './user.service';
 import { RoomsFilter } from 'src/enities/RoomsFilter';
 import { IRoomsFilter } from 'src/interfaces/IRoomsFilter';
@@ -38,11 +38,15 @@ import {
   MESSAGE_TG_MENU_FILTERS,
   MESSAGE_TG_MENU_MENU,
   MESSAGE_TG_MENU_SUPPORT,
+  MESSAGE_TG_MENU_TARIFFS,
   TEMPLATE_ALL_FILTERS_VALUE,
   TEMPLATE_APARTMENT_MESSAGE,
   TEMPLATE_FILTER_VALUE,
   TEMPLATE_INFO_MESSAGE,
+  TEMPLATE_INVOICE_SUBSCRIPTION_DESCRIPTION,
+  TEMPLATE_PAY_SUBSCRIPTION_MESSAGE,
   TEMPLATE_SEARCH_VALUE,
+  TEMPLATE_TARIFFS_MESSAGE,
 } from 'src/settings/messages';
 import {
   KEYBOARD_BACK_TO_FILTER,
@@ -52,12 +56,17 @@ import {
   KEYBOARD_MAIN_MENU,
   KEYBOARD_ROOMS_FILTER,
   KEYBOARD_SEARCH_MENU,
+  KEYBOARD_TARIFFS_MENU,
+  TEMPLATE_KEYBOARD_PAY_SUBSCRIPTION_MENU,
 } from 'src/settings/keyboards';
 import { CreatedUser } from 'src/interfaces/User';
 import { BotStatesEnum } from 'src/interfaces/BotStatesEnum';
 import { DistrictsFilter } from 'src/enities/DistrictsFilter';
 import { IDistrictsFilter } from 'src/interfaces/IDistrictsFilter';
 import { IApartment } from 'src/interfaces/IApartment';
+import { SubscriptionService } from './subscription.service';
+import { CreatedSubscription } from 'src/interfaces/Subscription';
+import { UserSubscriptionService } from './userSubscription.service';
 
 @Injectable()
 export class TelegramService {
@@ -68,7 +77,11 @@ export class TelegramService {
 
   private currentState: BotStatesEnum = BotStatesEnum.NULL;
 
-  constructor(private userService: UserService) {
+  constructor(
+    private userService: UserService,
+    private subscriptionService: SubscriptionService,
+    private userSubscriptionService: UserSubscriptionService
+  ) {
     this.bot.setMyCommands([
       {
         command: '/menu',
@@ -82,10 +95,16 @@ export class TelegramService {
         command: '/support',
         description: MESSAGE_TG_MENU_SUPPORT,
       },
+      {
+        command: '/tariffs',
+        description: MESSAGE_TG_MENU_TARIFFS,
+      },
     ]);
 
     this.startListenCommands();
     this.startListenCallbacks();
+    this.startListenPreCheckout();
+    this.startListenSuccessfullPayments();
   }
 
   async startListenCommands() {
@@ -150,6 +169,14 @@ export class TelegramService {
 
         if (command === '/support') {
           await this.sendSupport(user);
+        }
+
+        if (command === '/tariffs') {
+          await this.sendTariffs(user);
+        }
+
+        if (command === '/pay-subscription') {
+          await this.sendPaySubscription(user);
         }
 
         if (this.currentState === BotStatesEnum.MAXPRICE) {
@@ -327,6 +354,34 @@ export class TelegramService {
       if (command === '/support') {
         await this.sendSupport(user);
       }
+
+      if (command === '/tariffs') {
+        await this.sendTariffs(user);
+      }
+
+      if (command === '/pay-subscription') {
+        await this.sendPaySubscription(user);
+      }
+
+      if (command.includes('/subscription-pay-')) {
+        const id = command.split('-').pop();
+
+        await this.sendSubscriptionInvoice(user, id);
+      }
+    });
+  }
+
+  async startListenSuccessfullPayments() {
+    await this.bot.on('successful_payment', async (msg) => {
+      console.log(msg);
+    });
+  }
+
+  async startListenPreCheckout() {
+    await this.bot.on('pre_checkout_query', async (query) => {
+      const user = await this.userService.getUserByTelegramId(query.from.id);
+
+      await this.subscribeUser(user, query.invoice_payload, query.id);
     });
   }
 
@@ -372,6 +427,58 @@ export class TelegramService {
     if (saveResult) {
       this.currentState = BotStatesEnum.NULL;
       return await this.sendSuccessfullyUpdate(user);
+    }
+  }
+
+  async subscribeUser(
+    user: CreatedUser,
+    subscriptionId: string,
+    queryId: string
+  ) {
+    try {
+      const userSubscription = await this.userSubscriptionService.create(
+        user._id,
+        subscriptionId
+      );
+
+      this.logger.log(`new subscription: ${userSubscription}`);
+
+      if (userSubscription) {
+        await this.bot.answerPreCheckoutQuery(queryId, true);
+      }
+    } catch {
+      await this.bot.answerPreCheckoutQuery(queryId, false, {
+        error_message: 'Не удалось осуществить подписку',
+      });
+    }
+  }
+
+  async sendSubscriptionInvoice(user: CreatedUser, id: string) {
+    try {
+      const subscription = await this.subscriptionService.getOne(id);
+      const labelPrices: LabeledPrice[] = [
+        {
+          label: subscription.name,
+          amount: subscription.price * 100,
+        },
+      ];
+
+      const payload = TEMPLATE_INVOICE_SUBSCRIPTION_DESCRIPTION(subscription);
+
+      console.log(subscription);
+
+      await this.bot.sendInvoice(
+        user.chatId,
+        subscription.name,
+        payload,
+        subscription._id.toString(),
+        process.env.TG_PAYMENT_TOKEN,
+        '',
+        'RUB',
+        labelPrices
+      );
+    } catch (error) {
+      this.logger.error(error);
     }
   }
 
@@ -425,12 +532,40 @@ export class TelegramService {
   }
 
   async sendAbout(user: CreatedUser) {
-    return this.bot.sendMessage(
+    return await this.bot.sendMessage(
       user.chatId,
       TEMPLATE_INFO_MESSAGE(MESSAGE_HEADER_ABOUT, MESSAGE_BODY_ABOUT),
       {
         parse_mode: 'HTML',
         reply_markup: KEYBOARD_BACK_TO_MENU,
+      }
+    );
+  }
+
+  async sendTariffs(user: CreatedUser) {
+    const subscriptions = await this.getPayableSubscriptions();
+    const subscriptionsNames = subscriptions.map((sub) => sub.name);
+
+    return await this.bot.sendMessage(
+      user.chatId,
+      TEMPLATE_TARIFFS_MESSAGE(subscriptionsNames),
+      {
+        parse_mode: 'HTML',
+        reply_markup: KEYBOARD_TARIFFS_MENU,
+      }
+    );
+  }
+
+  async sendPaySubscription(user: CreatedUser) {
+    const subscriptions = await this.getPayableSubscriptions();
+    const subscriptionsNames = subscriptions.map((sub) => sub.name);
+
+    return await this.bot.sendMessage(
+      user.chatId,
+      TEMPLATE_PAY_SUBSCRIPTION_MESSAGE(subscriptionsNames),
+      {
+        parse_mode: 'HTML',
+        reply_markup: TEMPLATE_KEYBOARD_PAY_SUBSCRIPTION_MENU(subscriptions),
       }
     );
   }
@@ -572,6 +707,15 @@ export class TelegramService {
         parse_mode: 'HTML',
       }
     );
+  }
+
+  private async getPayableSubscriptions() {
+    const subscriptions = await this.subscriptionService.findAll({
+      isDisposable: false,
+      isInitial: false,
+    });
+
+    return subscriptions;
   }
 
   private getCurrentFloorFilter(user: CreatedUser) {

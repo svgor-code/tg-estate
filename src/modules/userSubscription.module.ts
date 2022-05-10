@@ -10,5 +10,6 @@ import { SubscriptionModule } from './subscription.module';
     SubscriptionModule,
   ],
   providers: [UserSubscriptionService],
+  exports: [UserSubscriptionService],
 })
 export class UserSubscriptionModule {}

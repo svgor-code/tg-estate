@@ -5,3 +5,8 @@ export type CreatedSubscription = Subscription &
   Document<any, any, any> & {
     _id: any;
   };
+
+export type SubscriptionFilter = {
+  isDisposable?: boolean;
+  isInitial?: boolean;
+};

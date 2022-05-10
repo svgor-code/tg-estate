@@ -2,6 +2,7 @@ import { DISTRICTS_NAMES } from 'src/enities/DistrictsFilter';
 import { ROOMS_NAMES } from 'src/enities/RoomsFilter';
 import { IDistrictsFilter } from 'src/interfaces/IDistrictsFilter';
 import { IRoomsFilter } from 'src/interfaces/IRoomsFilter';
+import { CreatedSubscription } from 'src/interfaces/Subscription';
 
 export const KEYBOARD_BACK_TO_MENU = {
   inline_keyboard: [[{ text: '⤴️ Меню', callback_data: '/menu' }]],
@@ -111,8 +112,38 @@ export const KEYBOARD_MAIN_MENU = {
       { text: '✉️ Оповещения', callback_data: '/search' },
     ],
     [
+      { text: '⭐ Моя подписка', callback_data: '/subscription' },
+      { text: '🚀 Тарифы', callback_data: '/tariffs' },
+    ],
+    [
       { text: '🤖 Инструкция', callback_data: '/about' },
       { text: '📧 Поддержка', callback_data: '/support' },
     ],
   ],
+};
+
+export const KEYBOARD_TARIFFS_MENU = {
+  inline_keyboard: [
+    [{ text: '⭐ Моя подписка', callback_data: '/subscription' }],
+    [{ text: '💳 Оплатить подписку', callback_data: '/pay-subscription' }],
+    [{ text: '⤴️ Меню', callback_data: '/menu' }],
+  ],
+};
+
+export const TEMPLATE_KEYBOARD_PAY_SUBSCRIPTION_MENU = (
+  subscriptions: CreatedSubscription[]
+) => {
+  const keyboard = subscriptions.reduce((acc, sub) => {
+    return [
+      ...acc,
+      [{ text: sub.name, callback_data: `/subscription-pay-${sub.id}` }],
+    ];
+  }, []);
+
+  return {
+    inline_keyboard: [
+      ...keyboard,
+      [{ text: '⤴️ Меню', callback_data: '/menu' }],
+    ],
+  };
 };

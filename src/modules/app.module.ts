@@ -4,8 +4,10 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from '../controllers/app.controller';
 import { AppService } from '../services/app.service';
 import { ParserModule } from './parser.module';
+import { SubscriptionModule } from './subscription.module';
 import { TaskModule } from './task.module';
 import { TelegramModule } from './telegram.module';
+import { UserSubscriptionModule } from './userSubscription.module';
 
 const { MONGO_USERNAME, MONGO_PASSWORD, MONGO_PORT, MONGO_DB } = process.env;
 
@@ -18,6 +20,8 @@ const mongoConnectionString = `mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@tg-
     TaskModule,
     ParserModule,
     TelegramModule,
+    SubscriptionModule,
+    UserSubscriptionModule,
   ],
   controllers: [AppController],
   providers: [AppService],

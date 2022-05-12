@@ -1,3 +1,4 @@
+import moment from 'moment';
 import { DISTRICTS_NAMES } from 'src/enities/DistrictsFilter';
 import { ROOMS_NAMES } from 'src/enities/RoomsFilter';
 import { IApartment } from 'src/interfaces/IApartment';
@@ -67,6 +68,11 @@ export const MESSAGE_BODY_SUPPORT =
 export const MESSAGE_BODY_ABOUT =
   'Бот ищет новые объявления на Авито, по категории <strong>Вторичное жилье</strong>. \n\nКаждое объявление проходит пользовательские фильтры. Если объявление прошло фильтры, бот отправляет вам сообщение с ним. \n\nДля начала работы настройте параметры в разделе <strong>⚙️ Мои фильтры</strong> и запустите оповещения в разделе <strong>✉️ Оповещения</strong>';
 
+export const MESSAGE_INACTIVE_SUBSCRIPTION_INFO = `На данный момент у вас нет активных подписок.`;
+
+export const MESSAGE_INITIAL_SUBSCRIPTION_SUCCESS =
+  'Активирован пробный период на 5 дней';
+
 export const MESSAGE_CURRENT_FLOOR_FILTER = (minFloorFilter, maxFloorFilter) =>
   `<strong>на ${minFloorFilter}-${maxFloorFilter} этажах</strong>`;
 
@@ -95,7 +101,8 @@ export const MESSAGE_CURRENT_DISTRICTS_FILTER = (activeDistricts) => {
 
 export const TEMPLATE_SEARCH_VALUE = (
   header: string,
-  currentValue: boolean
+  currentValue: boolean,
+  isSubscriptionActive: boolean,
 ) => {
   return `${header} \n\nТекущее значение: ${
     currentValue ? 'Включены' : 'Остановлены'
@@ -143,17 +150,17 @@ export const TEMPLATE_SUBSCRIPTION_MESSAGE = (
   return `<strong>Тариф: </strong>${subscriptionName}\n<strong>Истекает: ${endedAt}</strong>`;
 };
 
-export const TEMPLATE_TARIFFS_MESSAGE = (subscriptionsNames: string[]) => {
-  const tariffsText = subscriptionsNames.join('\n');
+export const TEMPLATE_TARIFFS_MESSAGE = (
+  subscriptions: CreatedSubscription[]
+) => {
+  const tariffsText = subscriptions
+    .map((sub) => `<strong>${sub.name}:</strong> ${sub.priceString}`)
+    .join('\n');
 
-  return `${MESSAGE_HEADER_TARIFFS}\n\nНотифик доступен по подписке в ${subscriptionsNames.length} тарифах.\n\n${tariffsText}\n\nДля всех новых пользователей <strong>1 ДЕНЬ БЕСЛАТНО</strong>.\n\nОплатить подписку можно прямо в боте по истечении пробного периода. Оплатить можно картой.\n\nВы сможете отменить подписку в любое время.\n\nО статусе текущей подписки можно узнать по команде /subscription.`;
+  return `${MESSAGE_HEADER_TARIFFS}\n\nНотифик доступен по подписке в ${subscriptions.length} тарифах.\n\n${tariffsText}\n\nДля всех новых пользователей первые <strong>5 ДНЕЙ БЕСЛАТНО</strong>.\n\nОплатить подписку можно прямо в боте по истечении пробного периода. Оплатить можно картой.\n\nВы сможете отменить подписку в любое время.\n\nО статусе текущей подписки можно узнать по команде /subscription.`;
 };
 
-export const TEMPLATE_PAY_SUBSCRIPTION_MESSAGE = (
-  subscriptionsNames: string[]
-) => {
-  const tariffsText = subscriptionsNames.join('\n');
-
+export const TEMPLATE_PAY_SUBSCRIPTION_MESSAGE = () => {
   return `${MESSAGE_HEADER_PAY_SUBSCRIPTION}\n\nОплатите подписку картой прямо в боте.`;
 };
 
@@ -165,4 +172,36 @@ export const TEMPLATE_INVOICE_SUBSCRIPTION_DESCRIPTION = (
   return `Данная подписка предоставляет доступ к оповещениям на ${
     months >= 1 ? `${months} месяц(-ев)` : `${subscription.days} дней(-я)`
   }`;
+};
+
+export const TEMPLATE_ACTIVE_SUBSCRIPTION_INFO = (
+  subscription: CreatedSubscription,
+  endedAt: Date
+) => {
+  return `Ваша активная подписка: <strong>${
+    subscription.name
+  }</strong>\nПодписка действительна до: ${moment(endedAt).format(
+    'DD-MM-YYYY'
+  )}`;
+};
+
+export const TEMPLATE_SUBSCRIPTION_SUCCESS_MESSAGE = (
+  subscription: CreatedSubscription,
+  endedAt: Date
+) => {
+  return `Вы успешно активировали подписку: <strong>${
+    subscription.name
+  }</strong>\nПодписка действительна до: ${moment(endedAt).format(
+    'DD-MM-YYYY'
+  )}`;
+};
+
+export const TEMPLATE_ALREADY_ACTIVE_SUBSCRIPTION_MESSAGE = (
+  subscription: CreatedSubscription,
+  endedAt: Date
+) => {
+  return `У вас уже есть активная подписка.\n\n${TEMPLATE_ACTIVE_SUBSCRIPTION_INFO(
+    subscription,
+    endedAt
+  )}`;
 };

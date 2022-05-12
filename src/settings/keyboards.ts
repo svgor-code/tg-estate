@@ -130,13 +130,26 @@ export const KEYBOARD_TARIFFS_MENU = {
   ],
 };
 
+export const KEYBOARD_INACTIVE_SUBSCRIPTION_MENU = {
+  inline_keyboard: [
+    [{ text: '🚀 Тарифы', callback_data: '/tariffs' }],
+    [{ text: '💳 Оплатить подписку', callback_data: '/pay-subscription' }],
+    [{ text: '⤴️ Меню', callback_data: '/menu' }],
+  ],
+};
+
 export const TEMPLATE_KEYBOARD_PAY_SUBSCRIPTION_MENU = (
   subscriptions: CreatedSubscription[]
 ) => {
   const keyboard = subscriptions.reduce((acc, sub) => {
     return [
       ...acc,
-      [{ text: sub.name, callback_data: `/subscription-pay-${sub.id}` }],
+      [
+        {
+          text: `${sub.name} ${sub.priceString}`,
+          callback_data: `/subscription-pay-${sub.id}`,
+        },
+      ],
     ];
   }, []);
 

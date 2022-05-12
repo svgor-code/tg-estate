@@ -27,6 +27,14 @@ export class SubscriptionService {
     return await this.subscriptionModel.findById(id).exec();
   }
 
+  async getInitialSubscription(): Promise<CreatedSubscription> {
+    return await this.subscriptionModel
+      .findOne({
+        isInitial: true,
+      })
+      .exec();
+  }
+
   async create(
     subscription: CreateSubscriptionDto
   ): Promise<CreatedSubscription> {

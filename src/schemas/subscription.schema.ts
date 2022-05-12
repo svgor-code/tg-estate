@@ -8,6 +8,9 @@ export class Subscription {
   @Prop({ type: String, required: true, default: '' })
   name: string;
 
+  @Prop({ type: String, required: false, default: '' })
+  priceString: string;
+
   @Prop({ type: Number, required: true, default: 0 })
   price: number;
 

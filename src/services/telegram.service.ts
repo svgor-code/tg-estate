@@ -27,6 +27,8 @@ import {
   MESSAGE_HEADER_MAIN_MENU,
   MESSAGE_HEADER_SEARCH,
   MESSAGE_HEADER_SUPPORT,
+  MESSAGE_INACTIVE_SUBSCRIPTION_INFO,
+  MESSAGE_INITIAL_SUBSCRIPTION_SUCCESS,
   MESSAGE_MAXPRICE_FILTER,
   MESSAGE_ROOMS_FILTER,
   MESSAGE_SEARCH_OFF,
@@ -39,13 +41,16 @@ import {
   MESSAGE_TG_MENU_MENU,
   MESSAGE_TG_MENU_SUPPORT,
   MESSAGE_TG_MENU_TARIFFS,
+  TEMPLATE_ACTIVE_SUBSCRIPTION_INFO,
   TEMPLATE_ALL_FILTERS_VALUE,
+  TEMPLATE_ALREADY_ACTIVE_SUBSCRIPTION_MESSAGE,
   TEMPLATE_APARTMENT_MESSAGE,
   TEMPLATE_FILTER_VALUE,
   TEMPLATE_INFO_MESSAGE,
   TEMPLATE_INVOICE_SUBSCRIPTION_DESCRIPTION,
   TEMPLATE_PAY_SUBSCRIPTION_MESSAGE,
   TEMPLATE_SEARCH_VALUE,
+  TEMPLATE_SUBSCRIPTION_SUCCESS_MESSAGE,
   TEMPLATE_TARIFFS_MESSAGE,
 } from 'src/settings/messages';
 import {
@@ -53,6 +58,7 @@ import {
   KEYBOARD_BACK_TO_MENU,
   KEYBOARD_DISTRICTS_FILTER,
   KEYBOARD_FILTERS_START,
+  KEYBOARD_INACTIVE_SUBSCRIPTION_MENU,
   KEYBOARD_MAIN_MENU,
   KEYBOARD_ROOMS_FILTER,
   KEYBOARD_SEARCH_MENU,
@@ -140,19 +146,9 @@ export class TelegramService {
             });
           }
 
-          await this.bot.sendMessage(chatId, MESSAGE_START, {
-            parse_mode: 'HTML',
-          });
+          const newUser = await this.userService.getUserByChatId(chatId);
 
-          await this.bot.sendMessage(chatId, MESSAGE_START_2, {
-            parse_mode: 'HTML',
-          });
-
-          const instructionsVideo = fs.createReadStream(
-            path.join(__dirname, '../../files/instructions.mp4')
-          );
-
-          await this.bot.sendVideo(chatId, instructionsVideo);
+          this.sendStartMessages(newUser);
         }
 
         if (command === '/filters') {
@@ -177,6 +173,10 @@ export class TelegramService {
 
         if (command === '/pay-subscription') {
           await this.sendPaySubscription(user);
+        }
+
+        if (command === '/subscription') {
+          await this.sendSubscriptionInfo(user);
         }
 
         if (this.currentState === BotStatesEnum.MAXPRICE) {
@@ -359,6 +359,10 @@ export class TelegramService {
         await this.sendTariffs(user);
       }
 
+      if (command === '/subscription') {
+        await this.sendSubscriptionInfo(user);
+      }
+
       if (command === '/pay-subscription') {
         await this.sendPaySubscription(user);
       }
@@ -373,7 +377,10 @@ export class TelegramService {
 
   async startListenSuccessfullPayments() {
     await this.bot.on('successful_payment', async (msg) => {
-      console.log(msg);
+      const chatId = msg.chat.id;
+      const user = await this.userService.getUserByChatId(chatId);
+
+      await this.sendSubscriptionSuccess(user);
     });
   }
 
@@ -433,7 +440,8 @@ export class TelegramService {
   async subscribeUser(
     user: CreatedUser,
     subscriptionId: string,
-    queryId: string
+    queryId?: string,
+    isInitial?: boolean
   ) {
     try {
       const userSubscription = await this.userSubscriptionService.create(
@@ -443,14 +451,61 @@ export class TelegramService {
 
       this.logger.log(`new subscription: ${userSubscription}`);
 
-      if (userSubscription) {
-        await this.bot.answerPreCheckoutQuery(queryId, true);
+      if (userSubscription && queryId) {
+        return await this.bot.answerPreCheckoutQuery(queryId, true);
       }
-    } catch {
+
+      if (isInitial) {
+        return await this.bot.sendMessage(
+          user.chatId,
+          MESSAGE_INITIAL_SUBSCRIPTION_SUCCESS,
+          {
+            parse_mode: 'HTML',
+          }
+        );
+      }
+    } catch (error) {
+      this.logger.log(error);
       await this.bot.answerPreCheckoutQuery(queryId, false, {
         error_message: 'Не удалось осуществить подписку',
       });
     }
+  }
+
+  async sendStartMessages(user: CreatedUser) {
+    await this.bot.sendMessage(user.chatId, MESSAGE_START, {
+      parse_mode: 'HTML',
+    });
+
+    await this.bot.sendMessage(user.chatId, MESSAGE_START_2, {
+      parse_mode: 'HTML',
+    });
+
+    const instructionsVideo = fs.createReadStream(
+      path.join(__dirname, '../../files/instructions.mp4')
+    );
+
+    await this.bot.sendVideo(user.chatId, instructionsVideo);
+
+    const initialSubscription =
+      await this.subscriptionService.getInitialSubscription();
+
+    await this.subscribeUser(user, initialSubscription._id, '', true);
+  }
+
+  async sendSubscriptionSuccess(user: CreatedUser) {
+    const userSubscription = await this.userSubscriptionService.getByUserId(
+      user._id,
+      true
+    );
+
+    await this.bot.sendMessage(
+      user.chatId,
+      TEMPLATE_SUBSCRIPTION_SUCCESS_MESSAGE(
+        userSubscription.subscription as CreatedSubscription,
+        userSubscription.endedAt
+      )
+    );
   }
 
   async sendSubscriptionInvoice(user: CreatedUser, id: string) {
@@ -464,8 +519,6 @@ export class TelegramService {
       ];
 
       const payload = TEMPLATE_INVOICE_SUBSCRIPTION_DESCRIPTION(subscription);
-
-      console.log(subscription);
 
       await this.bot.sendInvoice(
         user.chatId,
@@ -511,9 +564,16 @@ export class TelegramService {
   }
 
   async sendSearchMenu(user: CreatedUser) {
+    const activeUserSubscription =
+      await this.userSubscriptionService.getByUserId(user._id, true);
+
     return await this.bot.sendMessage(
       user.chatId,
-      TEMPLATE_SEARCH_VALUE(MESSAGE_HEADER_SEARCH, user.isSearchActive),
+      TEMPLATE_SEARCH_VALUE(
+        MESSAGE_HEADER_SEARCH,
+        user.isSearchActive,
+        !!activeUserSubscription
+      ),
       {
         parse_mode: 'HTML',
         reply_markup: KEYBOARD_SEARCH_MENU,
@@ -548,7 +608,7 @@ export class TelegramService {
 
     return await this.bot.sendMessage(
       user.chatId,
-      TEMPLATE_TARIFFS_MESSAGE(subscriptionsNames),
+      TEMPLATE_TARIFFS_MESSAGE(subscriptions),
       {
         parse_mode: 'HTML',
         reply_markup: KEYBOARD_TARIFFS_MENU,
@@ -558,11 +618,26 @@ export class TelegramService {
 
   async sendPaySubscription(user: CreatedUser) {
     const subscriptions = await this.getPayableSubscriptions();
-    const subscriptionsNames = subscriptions.map((sub) => sub.name);
+    const activeUserSubscription =
+      await this.userSubscriptionService.getByUserId(user._id, true);
+
+    if (activeUserSubscription) {
+      return await this.bot.sendMessage(
+        user.chatId,
+        TEMPLATE_ALREADY_ACTIVE_SUBSCRIPTION_MESSAGE(
+          activeUserSubscription.subscription as CreatedSubscription,
+          activeUserSubscription.endedAt
+        ),
+        {
+          parse_mode: 'HTML',
+          reply_markup: KEYBOARD_BACK_TO_MENU,
+        }
+      );
+    }
 
     return await this.bot.sendMessage(
       user.chatId,
-      TEMPLATE_PAY_SUBSCRIPTION_MESSAGE(subscriptionsNames),
+      TEMPLATE_PAY_SUBSCRIPTION_MESSAGE(),
       {
         parse_mode: 'HTML',
         reply_markup: TEMPLATE_KEYBOARD_PAY_SUBSCRIPTION_MENU(subscriptions),
@@ -705,6 +780,38 @@ export class TelegramService {
       ),
       {
         parse_mode: 'HTML',
+      }
+    );
+  }
+
+  async sendSubscriptionInfo(user: CreatedUser) {
+    const userSubscription = await this.userSubscriptionService.getByUserId(
+      user._id,
+      true
+    );
+
+    if (userSubscription) {
+      const { subscription, endedAt } = userSubscription;
+
+      return await this.bot.sendMessage(
+        user.chatId,
+        TEMPLATE_ACTIVE_SUBSCRIPTION_INFO(
+          subscription as CreatedSubscription,
+          endedAt
+        ),
+        {
+          parse_mode: 'HTML',
+          reply_markup: KEYBOARD_BACK_TO_MENU,
+        }
+      );
+    }
+
+    await this.bot.sendMessage(
+      user.chatId,
+      MESSAGE_INACTIVE_SUBSCRIPTION_INFO,
+      {
+        parse_mode: 'HTML',
+        reply_markup: KEYBOARD_INACTIVE_SUBSCRIPTION_MENU,
       }
     );
   }

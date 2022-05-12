@@ -21,6 +21,24 @@ export class UserSubscriptionService {
     return await this.userSubscriptionModel.find().exec();
   }
 
+  async getByUserId(
+    userId: string,
+    isActive?: boolean
+  ): Promise<UserSubscription> {
+    const userSubscriptionFilter: { user: string; isActive?: boolean } = {
+      user: userId,
+    };
+
+    if (isActive !== undefined) {
+      userSubscriptionFilter.isActive = isActive;
+    }
+
+    return await this.userSubscriptionModel
+      .findOne(userSubscriptionFilter)
+      .populate('subscription')
+      .exec();
+  }
+
   async create(
     userId: string,
     subscriptionId: string

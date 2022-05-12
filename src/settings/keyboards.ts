@@ -95,14 +95,20 @@ export const KEYBOARD_DISTRICTS_FILTER = (districts: IDistrictsFilter) => {
   };
 };
 
-export const KEYBOARD_SEARCH_MENU = {
-  inline_keyboard: [
-    [
-      { text: '✅ Включить', callback_data: '/search-start' },
-      { text: '🚫 Остановить', callback_data: '/search-stop' },
+export const KEYBOARD_SEARCH_MENU = (isSubscriptionActive) => {
+  if (!isSubscriptionActive) {
+    return KEYBOARD_INACTIVE_SUBSCRIPTION_MENU;
+  }
+
+  return {
+    inline_keyboard: [
+      [
+        { text: '✅ Включить', callback_data: '/search-start' },
+        { text: '🚫 Остановить', callback_data: '/search-stop' },
+      ],
+      [{ text: '⤴️ Меню', callback_data: '/menu' }],
     ],
-    [{ text: '⤴️ Меню', callback_data: '/menu' }],
-  ],
+  };
 };
 
 export const KEYBOARD_MAIN_MENU = {

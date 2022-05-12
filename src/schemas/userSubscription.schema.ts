@@ -31,6 +31,12 @@ export class UserSubscription {
 
   @Prop({ type: Date, required: true })
   endedAt: Date;
+
+  @Prop({ type: String, required: false })
+  providerPaymentChargeId: String;
+
+  @Prop({ type: String, required: false })
+  telegramPaymentChargeId: String;
 }
 
 export const UserSubscriptionSchema = SchemaFactory.createForClass(UserSubscription);

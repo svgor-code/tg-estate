@@ -49,24 +49,24 @@ export class UserService {
     return users;
   }
 
+  async getUserById(id: string): Promise<CreatedUser> {
+    return await this.userModel.findById(id).exec();
+  }
+
   async getUserByChatId(chatId: number): Promise<CreatedUser> {
-    const user = await this.userModel
+    return await this.userModel
       .findOne({
         chatId,
       })
       .exec();
-
-    return user;
   }
 
   async getUserByTelegramId(tgUserId: number): Promise<CreatedUser> {
-    const user = await this.userModel
+    return await this.userModel
       .findOne({
         tgUserId,
       })
       .exec();
-
-    return user;
   }
 
   async addNewSendedApartment(

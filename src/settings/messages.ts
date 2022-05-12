@@ -73,6 +73,8 @@ export const MESSAGE_INACTIVE_SUBSCRIPTION_INFO = `На данный момен�
 export const MESSAGE_INITIAL_SUBSCRIPTION_SUCCESS =
   'Активирован пробный период на 5 дней';
 
+export const MESSAGE_DISABLE_SUBSCRIPTION_INFO = `Истек срок вашей подписки. Оповещения недоступны. Для получения оповещений оплатите подписку и включите оповещения.`;
+
 export const MESSAGE_CURRENT_FLOOR_FILTER = (minFloorFilter, maxFloorFilter) =>
   `<strong>на ${minFloorFilter}-${maxFloorFilter} этажах</strong>`;
 
@@ -102,10 +104,14 @@ export const MESSAGE_CURRENT_DISTRICTS_FILTER = (activeDistricts) => {
 export const TEMPLATE_SEARCH_VALUE = (
   header: string,
   currentValue: boolean,
-  isSubscriptionActive: boolean,
+  isSubscriptionActive: boolean
 ) => {
   return `${header} \n\nТекущее значение: ${
     currentValue ? 'Включены' : 'Остановлены'
+  }${
+    !isSubscriptionActive
+      ? '\n\nОповещения недоступны, так как у вас нет активной подписки. Оплатить подписку можно кликнув на кнопку "Оплатить подписку" 👇'
+      : ''
   }`;
 };
 
@@ -167,11 +173,7 @@ export const TEMPLATE_PAY_SUBSCRIPTION_MESSAGE = () => {
 export const TEMPLATE_INVOICE_SUBSCRIPTION_DESCRIPTION = (
   subscription: CreatedSubscription
 ) => {
-  const months = subscription.days / 31;
-
-  return `Данная подписка предоставляет доступ к оповещениям на ${
-    months >= 1 ? `${months} месяц(-ев)` : `${subscription.days} дней(-я)`
-  }`;
+  return `${subscription.priceString}`;
 };
 
 export const TEMPLATE_ACTIVE_SUBSCRIPTION_INFO = (
@@ -191,7 +193,7 @@ export const TEMPLATE_SUBSCRIPTION_SUCCESS_MESSAGE = (
 ) => {
   return `Вы успешно активировали подписку: <strong>${
     subscription.name
-  }</strong>\nПодписка действительна до: ${moment(endedAt).format(
+  }</strong>\n\nПодписка действительна до: ${moment(endedAt).format(
     'DD-MM-YYYY'
   )}`;
 };

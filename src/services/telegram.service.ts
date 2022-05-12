@@ -15,6 +15,7 @@ import {
   MESSAGE_CURRENT_MAXPRICE_FILTER,
   MESSAGE_CURRENT_ROOMS_FILTER,
   MESSAGE_CURRENT_SQUARE_FILTER,
+  MESSAGE_DISABLE_SUBSCRIPTION_INFO,
   MESSAGE_DISTRICTS_FILTER,
   MESSAGE_FLOOR_FILTER,
   MESSAGE_HEADER_ABOUT,
@@ -73,6 +74,7 @@ import { IApartment } from 'src/interfaces/IApartment';
 import { SubscriptionService } from './subscription.service';
 import { CreatedSubscription } from 'src/interfaces/Subscription';
 import { UserSubscriptionService } from './userSubscription.service';
+import moment from 'moment';
 
 @Injectable()
 export class TelegramService {
@@ -380,15 +382,46 @@ export class TelegramService {
       const chatId = msg.chat.id;
       const user = await this.userService.getUserByChatId(chatId);
 
-      await this.sendSubscriptionSuccess(user);
+      await this.subscribeUser(
+        false,
+        user,
+        msg.successful_payment.invoice_payload,
+        msg.successful_payment.provider_payment_charge_id,
+        msg.successful_payment.telegram_payment_charge_id
+      );
     });
   }
 
   async startListenPreCheckout() {
     await this.bot.on('pre_checkout_query', async (query) => {
       const user = await this.userService.getUserByTelegramId(query.from.id);
+      const subscription = await this.subscriptionService.getOne(
+        query.invoice_payload
+      );
+      const exitstUserSubscription =
+        await this.userSubscriptionService.getByUserId(user._id, true);
 
-      await this.subscribeUser(user, query.invoice_payload, query.id);
+      if (exitstUserSubscription) {
+        await this.bot.sendMessage(
+          user.chatId,
+          TEMPLATE_ALREADY_ACTIVE_SUBSCRIPTION_MESSAGE(
+            exitstUserSubscription.subscription as CreatedSubscription,
+            exitstUserSubscription.endedAt
+          ),
+          {
+            parse_mode: 'HTML',
+            reply_markup: KEYBOARD_BACK_TO_MENU,
+          }
+        );
+
+        return await this.bot.answerPreCheckoutQuery(query.id, false, {
+          error_message: 'Не удалось осуществить подписку',
+        });
+      }
+
+      if (user && subscription) {
+        return await this.bot.answerPreCheckoutQuery(query.id, true);
+      }
     });
   }
 
@@ -438,22 +471,21 @@ export class TelegramService {
   }
 
   async subscribeUser(
+    isInitial: boolean,
     user: CreatedUser,
     subscriptionId: string,
-    queryId?: string,
-    isInitial?: boolean
+    providerPaymentChargeId?: string,
+    telegramPaymentChargeId?: string,
   ) {
     try {
       const userSubscription = await this.userSubscriptionService.create(
         user._id,
-        subscriptionId
+        subscriptionId,
+        providerPaymentChargeId,
+        telegramPaymentChargeId,
       );
 
       this.logger.log(`new subscription: ${userSubscription}`);
-
-      if (userSubscription && queryId) {
-        return await this.bot.answerPreCheckoutQuery(queryId, true);
-      }
 
       if (isInitial) {
         return await this.bot.sendMessage(
@@ -464,11 +496,12 @@ export class TelegramService {
           }
         );
       }
+
+      if (userSubscription) {
+        return await this.sendSubscriptionSuccess(user);
+      }
     } catch (error) {
       this.logger.log(error);
-      await this.bot.answerPreCheckoutQuery(queryId, false, {
-        error_message: 'Не удалось осуществить подписку',
-      });
     }
   }
 
@@ -490,7 +523,7 @@ export class TelegramService {
     const initialSubscription =
       await this.subscriptionService.getInitialSubscription();
 
-    await this.subscribeUser(user, initialSubscription._id, '', true);
+    await this.subscribeUser(true, user, initialSubscription._id);
   }
 
   async sendSubscriptionSuccess(user: CreatedUser) {
@@ -504,7 +537,11 @@ export class TelegramService {
       TEMPLATE_SUBSCRIPTION_SUCCESS_MESSAGE(
         userSubscription.subscription as CreatedSubscription,
         userSubscription.endedAt
-      )
+      ),
+      {
+        parse_mode: 'HTML',
+        reply_markup: KEYBOARD_MAIN_MENU,
+      }
     );
   }
 
@@ -567,16 +604,20 @@ export class TelegramService {
     const activeUserSubscription =
       await this.userSubscriptionService.getByUserId(user._id, true);
 
+    console.log(activeUserSubscription);
+
+    const isSubscriptionActive = !!activeUserSubscription;
+
     return await this.bot.sendMessage(
       user.chatId,
       TEMPLATE_SEARCH_VALUE(
         MESSAGE_HEADER_SEARCH,
         user.isSearchActive,
-        !!activeUserSubscription
+        isSubscriptionActive
       ),
       {
         parse_mode: 'HTML',
-        reply_markup: KEYBOARD_SEARCH_MENU,
+        reply_markup: KEYBOARD_SEARCH_MENU(isSubscriptionActive),
       }
     );
   }
@@ -814,6 +855,13 @@ export class TelegramService {
         reply_markup: KEYBOARD_INACTIVE_SUBSCRIPTION_MENU,
       }
     );
+  }
+
+  async sendSubscriptionDisabled(user: CreatedUser) {
+    await this.bot.sendMessage(user.chatId, MESSAGE_DISABLE_SUBSCRIPTION_INFO, {
+      parse_mode: 'HTML',
+      reply_markup: KEYBOARD_INACTIVE_SUBSCRIPTION_MENU,
+    });
   }
 
   private async getPayableSubscriptions() {

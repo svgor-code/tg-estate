@@ -8,23 +8,29 @@ import {
 } from 'src/schemas/userSubscription.schema';
 import { SubscriptionService } from './subscription.service';
 import { UpdateSubscriptionDto } from 'src/dto/subscription/UpdateSubscriptionDto';
+import { UserService } from './user.service';
+import { TelegramService } from './telegram.service';
+import { CreatedUserSubscription } from 'src/interfaces/UserSubscription';
 
 @Injectable()
 export class UserSubscriptionService {
   constructor(
     @InjectModel(UserSubscription.name)
     private userSubscriptionModel: Model<UserSubscriptionDocument>,
-    private subscriptionService: SubscriptionService
+    private subscriptionService: SubscriptionService,
+    private userService: UserService,
   ) {}
 
-  async findAll(): Promise<UserSubscription[]> {
-    return await this.userSubscriptionModel.find().exec();
+  async findAll(filters?: {
+    isActive?: boolean;
+  }): Promise<CreatedUserSubscription[]> {
+    return await this.userSubscriptionModel.find(filters).exec();
   }
 
   async getByUserId(
     userId: string,
     isActive?: boolean
-  ): Promise<UserSubscription> {
+  ): Promise<CreatedUserSubscription> {
     const userSubscriptionFilter: { user: string; isActive?: boolean } = {
       user: userId,
     };
@@ -41,8 +47,10 @@ export class UserSubscriptionService {
 
   async create(
     userId: string,
-    subscriptionId: string
-  ): Promise<UserSubscription> {
+    subscriptionId: string,
+    providerPaymentChargeId?: string,
+    telegramPaymentChargeId?: string,
+  ): Promise<CreatedUserSubscription> {
     const startedAt = moment().utc();
     const { days } = await this.subscriptionService.getOne(subscriptionId);
     const endedAt = moment(startedAt).utc().add(days, 'days');
@@ -53,6 +61,8 @@ export class UserSubscriptionService {
       isActive: true,
       startedAt: startedAt.toDate(),
       endedAt: endedAt.toDate(),
+      providerPaymentChargeId,
+      telegramPaymentChargeId,
     });
   }
 
@@ -70,5 +80,36 @@ export class UserSubscriptionService {
         }
       )
       .exec();
+  }
+
+  async disableSubscription(id: string) {
+    const userSubscription = await this.userSubscriptionModel
+      .findByIdAndUpdate(
+        id,
+        {
+          $set: {
+            isActive: false,
+          },
+        },
+        {
+          new: true,
+        }
+      )
+      .exec();
+
+    const user = await this.userService.getUserById(
+      userSubscription.user.toString()
+    );
+
+    console.log(
+      'user id:',
+      user,
+      userSubscription.user,
+      userSubscription.user.toString()
+    );
+
+    await this.userService.switchSearch(user._id, false);
+
+    return { user, userSubscription };
   }
 }

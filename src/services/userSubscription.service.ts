@@ -101,13 +101,6 @@ export class UserSubscriptionService {
       userSubscription.user.toString()
     );
 
-    console.log(
-      'user id:',
-      user,
-      userSubscription.user,
-      userSubscription.user.toString()
-    );
-
     await this.userService.switchSearch(user._id, false);
 
     return { user, userSubscription };

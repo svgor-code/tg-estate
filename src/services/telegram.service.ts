@@ -37,6 +37,7 @@ import {
   MESSAGE_SQUARE_FILTER,
   MESSAGE_START,
   MESSAGE_START_2,
+  MESSAGE_START_3,
   MESSAGE_SUCCESSFULLY_UPDATE,
   MESSAGE_TG_MENU_FILTERS,
   MESSAGE_TG_MENU_MENU,
@@ -475,14 +476,14 @@ export class TelegramService {
     user: CreatedUser,
     subscriptionId: string,
     providerPaymentChargeId?: string,
-    telegramPaymentChargeId?: string,
+    telegramPaymentChargeId?: string
   ) {
     try {
       const userSubscription = await this.userSubscriptionService.create(
         user._id,
         subscriptionId,
         providerPaymentChargeId,
-        telegramPaymentChargeId,
+        telegramPaymentChargeId
       );
 
       this.logger.log(`new subscription: ${userSubscription}`);
@@ -506,9 +507,23 @@ export class TelegramService {
   }
 
   async sendStartMessages(user: CreatedUser) {
-    await this.bot.sendMessage(user.chatId, MESSAGE_START, {
-      parse_mode: 'HTML',
-    });
+    const existUserSubscription =
+      await this.userSubscriptionService.getByUserId(user._id);
+
+    if (!existUserSubscription) {
+      const initialSubscription =
+        await this.subscriptionService.getInitialSubscription();
+
+      await this.subscribeUser(true, user, initialSubscription._id);
+    }
+
+    await this.bot.sendMessage(
+      user.chatId,
+      MESSAGE_START(!existUserSubscription),
+      {
+        parse_mode: 'HTML',
+      }
+    );
 
     await this.bot.sendMessage(user.chatId, MESSAGE_START_2, {
       parse_mode: 'HTML',
@@ -520,10 +535,9 @@ export class TelegramService {
 
     await this.bot.sendVideo(user.chatId, instructionsVideo);
 
-    const initialSubscription =
-      await this.subscriptionService.getInitialSubscription();
-
-    await this.subscribeUser(true, user, initialSubscription._id);
+    await this.bot.sendMessage(user.chatId, MESSAGE_START_3, {
+      parse_mode: 'HTML',
+    });
   }
 
   async sendSubscriptionSuccess(user: CreatedUser) {
@@ -584,6 +598,12 @@ export class TelegramService {
 
       await this.userService.addNewSendedApartment(user.chatId, apartment);
     } catch (error) {
+      if (error.message.includes('bot was blocked by the user')) {
+        this.userService.switchSearch(user._id, false);
+        this.logger.log('User was block bot. Search switched to inactive');
+        return;
+      }
+
       this.logger.error(error);
     }
   }
@@ -623,7 +643,7 @@ export class TelegramService {
   }
 
   async sendSupport(user: CreatedUser) {
-    return await this.bot.sendMessage(
+    await this.bot.sendMessage(
       user.chatId,
       TEMPLATE_INFO_MESSAGE(MESSAGE_HEADER_SUPPORT, MESSAGE_BODY_SUPPORT),
       {
@@ -633,14 +653,23 @@ export class TelegramService {
   }
 
   async sendAbout(user: CreatedUser) {
-    return await this.bot.sendMessage(
+    await this.bot.sendMessage(
       user.chatId,
       TEMPLATE_INFO_MESSAGE(MESSAGE_HEADER_ABOUT, MESSAGE_BODY_ABOUT),
       {
         parse_mode: 'HTML',
-        reply_markup: KEYBOARD_BACK_TO_MENU,
       }
     );
+
+    await this.bot.sendMessage(user.chatId, MESSAGE_START_2, {
+      parse_mode: 'HTML',
+    });
+
+    const instructionsVideo = fs.createReadStream(
+      path.join(__dirname, '../../files/instructions.mp4')
+    );
+
+    await this.bot.sendVideo(user.chatId, instructionsVideo);
   }
 
   async sendTariffs(user: CreatedUser) {

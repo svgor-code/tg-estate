@@ -20,7 +20,9 @@ export class SubscriptionService {
   ) {}
 
   async findAll(filters?: SubscriptionFilter): Promise<CreatedSubscription[]> {
-    return await this.subscriptionModel.find({ ...(filters || {}) }).exec();
+    const subscriptions = await this.subscriptionModel.find({ ...(filters || {}) }).exec();
+
+    return subscriptions.sort((a, b) => a.price - b.price);
   }
 
   async getOne(id: string): Promise<CreatedSubscription> {

@@ -78,7 +78,7 @@ export const MESSAGE_BODY_ABOUT =
 export const MESSAGE_INACTIVE_SUBSCRIPTION_INFO = `На данный момент у вас нет активных подписок.`;
 
 export const MESSAGE_INITIAL_SUBSCRIPTION_SUCCESS =
-  'Активирован пробный период на 5 дней';
+  'Активирован пробный период на 3 дня';
 
 export const MESSAGE_DISABLE_SUBSCRIPTION_INFO = `Истек срок вашей подписки. Оповещения недоступны. Для получения оповещений оплатите подписку и включите оповещения.`;
 
@@ -170,7 +170,7 @@ export const TEMPLATE_TARIFFS_MESSAGE = (
     .map((sub) => `<strong>${sub.name}:</strong> ${sub.priceString}`)
     .join('\n');
 
-  return `${MESSAGE_HEADER_TARIFFS}\n\nНотифик доступен по подписке в ${subscriptions.length} тарифах.\n\n${tariffsText}\n\nДля всех новых пользователей первые <strong>5 ДНЕЙ БЕСЛАТНО</strong>.\n\nОплатить подписку можно прямо в боте по истечении пробного периода. Оплатить можно картой.\n\nВы сможете отменить подписку в любое время.\n\nО статусе текущей подписки можно узнать по команде /subscription.`;
+  return `${MESSAGE_HEADER_TARIFFS}\n\nНотифик доступен по подписке в ${subscriptions.length} тарифах.\n\n${tariffsText}\n\nДля всех новых пользователей первые <strong>3 ДНЯ БЕСЛАТНО</strong>.\n\nОплатить подписку можно прямо в боте по истечении пробного периода. Оплатить можно картой.\n\nО статусе текущей подписки можно узнать по команде /subscription.`;
 };
 
 export const TEMPLATE_PAY_SUBSCRIPTION_MESSAGE = () => {

@@ -557,6 +557,8 @@ export class TelegramService {
         reply_markup: KEYBOARD_MAIN_MENU,
       }
     );
+
+    await this.userService.switchSearch(user._id, true);
   }
 
   async sendSubscriptionInvoice(user: CreatedUser, id: string) {

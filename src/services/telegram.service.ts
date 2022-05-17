@@ -120,7 +120,11 @@ export class TelegramService {
         command: '/tariffs',
         description: MESSAGE_TG_MENU_TARIFFS,
       },
-    ]);
+    ], {
+      scope: {
+        type: 'default',
+      }
+    });
 
     this.startListenCommands();
     this.startListenCallbacks();

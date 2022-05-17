@@ -1,3 +1,4 @@
+import { Payment } from '@a2seven/yoo-checkout';
 import moment from 'moment';
 import { DISTRICTS_NAMES } from 'src/enities/DistrictsFilter';
 import { ROOMS_NAMES } from 'src/enities/RoomsFilter';
@@ -100,6 +101,8 @@ export const MESSAGE_CURRENT_ROOMS_FILTER = (activeRooms) => {
   return `<strong>${roomsList}</strong>`;
 };
 
+export const MESSAGE_SUBSCRIPTION_ERROR = `Не удалось осуществить подписку, пожалуйста, обратитесь в поддержку. Платеж отменен.`;
+
 export const MESSAGE_CURRENT_DISTRICTS_FILTER = (activeDistricts) => {
   const districtsList = activeDistricts
     .map((room) => DISTRICTS_NAMES[room])
@@ -178,9 +181,28 @@ export const TEMPLATE_PAY_SUBSCRIPTION_MESSAGE = () => {
 };
 
 export const TEMPLATE_INVOICE_SUBSCRIPTION_DESCRIPTION = (
-  subscription: CreatedSubscription
+  subscription: CreatedSubscription,
+  payment: Payment
 ) => {
-  return `${subscription.priceString}`;
+  return `<strong>Ваш счет на оплату сформирован: </strong>\n<strong>ID платежа: </strong>${payment.id}\n<strong>Платежная система: </strong>ЮKassa\n<strong>Детали: </strong>${subscription.priceString}\n\nДля завершения процесса оплаты нажмите на кнопку 💰 Оплатить`;
+};
+
+export const TEMPLATE_INVOICE_SUBSCRIPTION_DESCRIPTION_WAIT = (
+  payment: Payment
+) => {
+  return `<strong>Ваш платеж за подписку ${payment.description} ожидает подтверждения</strong>`;
+};
+
+export const TEMPLATE_INVOICE_SUBSCRIPTION_DESCRIPTION_SUCCESS = (
+  payment: Payment
+) => {
+  return `<strong>Ваш платеж за подписку ${payment.description} подтвержден</strong>`;
+};
+
+export const TEMPLATE_INVOICE_SUBSCRIPTION_DESCRIPTION_CANCELED = (
+  payment: Payment
+) => {
+  return `<strong>Ваш платеж за подписку ${payment.description} отменен</strong>`;
 };
 
 export const TEMPLATE_ACTIVE_SUBSCRIPTION_INFO = (

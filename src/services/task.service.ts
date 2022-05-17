@@ -4,6 +4,7 @@ import { Cron } from '@nestjs/schedule';
 import { UserSubscriptionService } from './userSubscription.service';
 import moment from 'moment';
 import { TelegramService } from './telegram.service';
+import { YookassaService } from './yookassa.service';
 
 /*
 
@@ -25,7 +26,8 @@ export class TaskService {
   constructor(
     private parserService: ParserService,
     private userSubscriptionService: UserSubscriptionService,
-    private telegramService: TelegramService
+    private telegramService: TelegramService,
+    private yookassaService: YookassaService
   ) {}
 
   @Cron('50 * * * * *')
@@ -58,6 +60,19 @@ export class TaskService {
         } catch (error) {
           this.logger.error(error);
         }
+      })
+    );
+  }
+
+  @Cron('*/15 * * * * *')
+  async checkWaitingPayments() {
+    const paymentsList = await this.yookassaService.getPaymentList({
+      status: 'waiting_for_capture',
+    });
+
+    await Promise.all(
+      paymentsList.items.map(async (payment) => {
+        await this.telegramService.captureSubscription(payment);
       })
     );
   }

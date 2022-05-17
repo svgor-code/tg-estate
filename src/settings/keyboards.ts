@@ -166,3 +166,7 @@ export const TEMPLATE_KEYBOARD_PAY_SUBSCRIPTION_MENU = (
     ],
   };
 };
+
+export const KEYBOARD_SUPPORT = {
+  inline_keyboard: [[{ text: '📧 Поддержка', callback_data: '/support' }]],
+};

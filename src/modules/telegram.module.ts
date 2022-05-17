@@ -3,9 +3,15 @@ import { TelegramService } from 'src/services/telegram.service';
 import { SubscriptionModule } from './subscription.module';
 import { UserModule } from './user.module';
 import { UserSubscriptionModule } from './userSubscription.module';
+import { YookassaModule } from './yookassa.module';
 
 @Module({
-  imports: [UserModule, SubscriptionModule, UserSubscriptionModule],
+  imports: [
+    UserModule,
+    SubscriptionModule,
+    UserSubscriptionModule,
+    YookassaModule,
+  ],
   controllers: [],
   providers: [TelegramService],
   exports: [TelegramService],

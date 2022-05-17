@@ -38,6 +38,7 @@ import {
   MESSAGE_START,
   MESSAGE_START_2,
   MESSAGE_START_3,
+  MESSAGE_SUBSCRIPTION_ERROR,
   MESSAGE_SUCCESSFULLY_UPDATE,
   MESSAGE_TG_MENU_FILTERS,
   MESSAGE_TG_MENU_MENU,
@@ -50,6 +51,9 @@ import {
   TEMPLATE_FILTER_VALUE,
   TEMPLATE_INFO_MESSAGE,
   TEMPLATE_INVOICE_SUBSCRIPTION_DESCRIPTION,
+  TEMPLATE_INVOICE_SUBSCRIPTION_DESCRIPTION_CANCELED,
+  TEMPLATE_INVOICE_SUBSCRIPTION_DESCRIPTION_SUCCESS,
+  TEMPLATE_INVOICE_SUBSCRIPTION_DESCRIPTION_WAIT,
   TEMPLATE_PAY_SUBSCRIPTION_MESSAGE,
   TEMPLATE_SEARCH_VALUE,
   TEMPLATE_SUBSCRIPTION_SUCCESS_MESSAGE,
@@ -64,6 +68,7 @@ import {
   KEYBOARD_MAIN_MENU,
   KEYBOARD_ROOMS_FILTER,
   KEYBOARD_SEARCH_MENU,
+  KEYBOARD_SUPPORT,
   KEYBOARD_TARIFFS_MENU,
   TEMPLATE_KEYBOARD_PAY_SUBSCRIPTION_MENU,
 } from 'src/settings/keyboards';
@@ -75,7 +80,8 @@ import { IApartment } from 'src/interfaces/IApartment';
 import { SubscriptionService } from './subscription.service';
 import { CreatedSubscription } from 'src/interfaces/Subscription';
 import { UserSubscriptionService } from './userSubscription.service';
-import moment from 'moment';
+import { YookassaService } from './yookassa.service';
+import { Payment } from '@a2seven/yoo-checkout';
 
 @Injectable()
 export class TelegramService {
@@ -89,7 +95,8 @@ export class TelegramService {
   constructor(
     private userService: UserService,
     private subscriptionService: SubscriptionService,
-    private userSubscriptionService: UserSubscriptionService
+    private userSubscriptionService: UserSubscriptionService,
+    private yookassaService: YookassaService
   ) {
     this.bot.setMyCommands([
       {
@@ -112,8 +119,6 @@ export class TelegramService {
 
     this.startListenCommands();
     this.startListenCallbacks();
-    this.startListenPreCheckout();
-    this.startListenSuccessfullPayments();
   }
 
   async startListenCommands() {
@@ -378,54 +383,6 @@ export class TelegramService {
     });
   }
 
-  async startListenSuccessfullPayments() {
-    await this.bot.on('successful_payment', async (msg) => {
-      const chatId = msg.chat.id;
-      const user = await this.userService.getUserByChatId(chatId);
-
-      await this.subscribeUser(
-        false,
-        user,
-        msg.successful_payment.invoice_payload,
-        msg.successful_payment.provider_payment_charge_id,
-        msg.successful_payment.telegram_payment_charge_id
-      );
-    });
-  }
-
-  async startListenPreCheckout() {
-    await this.bot.on('pre_checkout_query', async (query) => {
-      const user = await this.userService.getUserByTelegramId(query.from.id);
-      const subscription = await this.subscriptionService.getOne(
-        query.invoice_payload
-      );
-      const exitstUserSubscription =
-        await this.userSubscriptionService.getByUserId(user._id, true);
-
-      if (exitstUserSubscription) {
-        await this.bot.sendMessage(
-          user.chatId,
-          TEMPLATE_ALREADY_ACTIVE_SUBSCRIPTION_MESSAGE(
-            exitstUserSubscription.subscription as CreatedSubscription,
-            exitstUserSubscription.endedAt
-          ),
-          {
-            parse_mode: 'HTML',
-            reply_markup: KEYBOARD_BACK_TO_MENU,
-          }
-        );
-
-        return await this.bot.answerPreCheckoutQuery(query.id, false, {
-          error_message: 'Не удалось осуществить подписку',
-        });
-      }
-
-      if (user && subscription) {
-        return await this.bot.answerPreCheckoutQuery(query.id, true);
-      }
-    });
-  }
-
   async saveMaxPriceFilter(user: CreatedUser, maxPrice: number) {
     try {
       await this.userService.updateMaxPriceFilter(user._id, maxPrice);
@@ -471,19 +428,45 @@ export class TelegramService {
     }
   }
 
+  async captureSubscription(payment: Payment) {
+    const { subscriptionId, userId } = payment.metadata;
+
+    const user = await this.userService.getUserById(userId);
+    const subscription = await this.subscriptionService.getOne(subscriptionId);
+    const exitstUserSubscription =
+      await this.userSubscriptionService.getByUserId(user._id, true);
+
+    if (exitstUserSubscription) {
+      await this.yookassaService.cancelPayment(payment.id);
+
+      return await this.bot.sendMessage(
+        user.chatId,
+        TEMPLATE_ALREADY_ACTIVE_SUBSCRIPTION_MESSAGE(
+          exitstUserSubscription.subscription as CreatedSubscription,
+          exitstUserSubscription.endedAt
+        ),
+        {
+          parse_mode: 'HTML',
+          reply_markup: KEYBOARD_BACK_TO_MENU,
+        }
+      );
+    }
+
+    if (user && subscription) {
+      return await this.subscribeUser(false, user, subscriptionId, payment);
+    }
+  }
+
   async subscribeUser(
     isInitial: boolean,
     user: CreatedUser,
     subscriptionId: string,
-    providerPaymentChargeId?: string,
-    telegramPaymentChargeId?: string
+    payment?: Payment
   ) {
     try {
       const userSubscription = await this.userSubscriptionService.create(
         user._id,
-        subscriptionId,
-        providerPaymentChargeId,
-        telegramPaymentChargeId
+        subscriptionId
       );
 
       this.logger.log(`new subscription: ${userSubscription}`);
@@ -499,10 +482,17 @@ export class TelegramService {
       }
 
       if (userSubscription) {
+        await this.yookassaService.capturePayment(payment.id, {
+          amount: payment.amount,
+        });
         return await this.sendSubscriptionSuccess(user);
       }
     } catch (error) {
       this.logger.log(error);
+      await this.yookassaService.cancelPayment(payment.id);
+      await this.bot.sendMessage(user.chatId, MESSAGE_SUBSCRIPTION_ERROR, {
+        reply_markup: KEYBOARD_SUPPORT,
+      });
     }
   }
 
@@ -564,25 +554,65 @@ export class TelegramService {
   async sendSubscriptionInvoice(user: CreatedUser, id: string) {
     try {
       const subscription = await this.subscriptionService.getOne(id);
-      const labelPrices: LabeledPrice[] = [
-        {
-          label: subscription.name,
-          amount: subscription.price * 100,
-        },
-      ];
 
-      const payload = TEMPLATE_INVOICE_SUBSCRIPTION_DESCRIPTION(subscription);
-
-      await this.bot.sendInvoice(
-        user.chatId,
-        subscription.name,
-        payload,
-        subscription._id.toString(),
-        process.env.TG_PAYMENT_TOKEN,
-        '',
-        'RUB',
-        labelPrices
+      const payment = await this.yookassaService.createPayment(
+        user._id,
+        subscription
       );
+
+      if (!payment) {
+        return;
+      }
+
+      if (payment.status === 'pending') {
+        await this.bot.sendMessage(
+          user.chatId,
+          TEMPLATE_INVOICE_SUBSCRIPTION_DESCRIPTION(subscription, payment),
+          {
+            parse_mode: 'HTML',
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  {
+                    text: '💰 Оплатить',
+                    url: payment.confirmation.confirmation_url,
+                  },
+                ],
+              ],
+            },
+          }
+        );
+      }
+
+      if (payment.status === 'waiting_for_capture') {
+        await this.bot.sendMessage(
+          user.chatId,
+          TEMPLATE_INVOICE_SUBSCRIPTION_DESCRIPTION_WAIT(payment),
+          {
+            parse_mode: 'HTML',
+          }
+        );
+      }
+
+      if (payment.status === 'succeeded') {
+        await this.bot.sendMessage(
+          user.chatId,
+          TEMPLATE_INVOICE_SUBSCRIPTION_DESCRIPTION_SUCCESS(payment),
+          {
+            parse_mode: 'HTML',
+          }
+        );
+      }
+
+      if (payment.status === 'canceled') {
+        await this.bot.sendMessage(
+          user.chatId,
+          TEMPLATE_INVOICE_SUBSCRIPTION_DESCRIPTION_CANCELED(payment),
+          {
+            parse_mode: 'HTML',
+          }
+        );
+      }
     } catch (error) {
       this.logger.error(error);
     }

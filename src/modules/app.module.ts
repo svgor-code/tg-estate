@@ -8,6 +8,7 @@ import { SubscriptionModule } from './subscription.module';
 import { TaskModule } from './task.module';
 import { TelegramModule } from './telegram.module';
 import { UserSubscriptionModule } from './userSubscription.module';
+import { YookassaModule } from './yookassa.module';
 
 const { MONGO_USERNAME, MONGO_PASSWORD, MONGO_PORT, MONGO_DB } = process.env;
 
@@ -22,6 +23,7 @@ const mongoConnectionString = `mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@tg-
     TelegramModule,
     SubscriptionModule,
     UserSubscriptionModule,
+    YookassaModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -64,7 +64,7 @@ export class TaskService {
     );
   }
 
-  @Cron('*/15 * * * * *')
+  @Cron('* * * * *')
   async checkWaitingPayments() {
     const paymentsList = await this.yookassaService.getPaymentList({
       status: 'waiting_for_capture',

@@ -42,6 +42,7 @@ import {
   MESSAGE_SUCCESSFULLY_UPDATE,
   MESSAGE_TG_MENU_FILTERS,
   MESSAGE_TG_MENU_MENU,
+  MESSAGE_TG_MENU_SUBSCRIPTION,
   MESSAGE_TG_MENU_SUPPORT,
   MESSAGE_TG_MENU_TARIFFS,
   TEMPLATE_ACTIVE_SUBSCRIPTION_INFO,
@@ -110,6 +111,10 @@ export class TelegramService {
       {
         command: '/support',
         description: MESSAGE_TG_MENU_SUPPORT,
+      },
+      {
+        command: '/subscription',
+        description: MESSAGE_TG_MENU_SUBSCRIPTION,
       },
       {
         command: '/tariffs',

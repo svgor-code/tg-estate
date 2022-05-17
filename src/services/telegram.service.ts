@@ -113,18 +113,10 @@ export class TelegramService {
         description: MESSAGE_TG_MENU_SUPPORT,
       },
       {
-        command: '/subscription',
-        description: MESSAGE_TG_MENU_SUBSCRIPTION,
-      },
-      {
         command: '/tariffs',
         description: MESSAGE_TG_MENU_TARIFFS,
       },
-    ], {
-      scope: {
-        type: 'default',
-      }
-    });
+    ]);
 
     this.startListenCommands();
     this.startListenCallbacks();

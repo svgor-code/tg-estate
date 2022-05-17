@@ -513,7 +513,9 @@ export class TelegramService {
       const initialSubscription =
         await this.subscriptionService.getInitialSubscription();
 
-      await this.subscribeUser(true, user, initialSubscription._id);
+      if (initialSubscription) {
+        await this.subscribeUser(true, user, initialSubscription._id);
+      }
     }
 
     await this.bot.sendMessage(

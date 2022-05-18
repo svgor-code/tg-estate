@@ -17,12 +17,13 @@ export class YookassaService {
     secretKey: process.env.YOO_SECRET,
   });
   private logger = new Logger(YookassaService.name);
-  private idempotenceKey = randomUUID();
 
   async createPayment(
     userId: string,
     subscription: CreatedSubscription,
   ): Promise<Payment> {
+    const idempotenceKey = randomUUID();
+
     const subscriptionDescription = `${subscription.name} ${subscription.priceString}`;
 
     const createPayload: ICreatePayment = {
@@ -47,7 +48,7 @@ export class YookassaService {
     try {
       const payment = await this.checkout.createPayment(
         createPayload,
-        this.idempotenceKey
+        idempotenceKey
       );
 
       this.logger.log(`Created new payment: ${JSON.stringify(payment)}`);
@@ -73,10 +74,11 @@ export class YookassaService {
     capturePayload: ICapturePayment
   ): Promise<Payment> {
     try {
+      const idempotenceKey = randomUUID();
       const payment = await this.checkout.capturePayment(
         paymentId,
         capturePayload,
-        this.idempotenceKey
+        idempotenceKey
       );
       return payment;
     } catch (error) {
@@ -88,9 +90,10 @@ export class YookassaService {
 
   async cancelPayment(paymentId: string): Promise<Payment> {
     try {
+      const idempotenceKey = randomUUID();
       const payment = await this.checkout.cancelPayment(
         paymentId,
-        this.idempotenceKey
+        idempotenceKey
       );
       return payment;
     } catch (error) {

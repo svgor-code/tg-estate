@@ -36,7 +36,7 @@ export class YookassaService {
       },
       confirmation: {
         type: 'redirect',
-        return_url: 'https://t.me/EstateNotificator_bot',
+        return_url: 'https://t.me/NotificRealEstate_bot',
       },
       description: subscriptionDescription,
       metadata: {

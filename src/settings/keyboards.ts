@@ -132,6 +132,7 @@ export const KEYBOARD_TARIFFS_MENU = {
   inline_keyboard: [
     [{ text: '⭐ Моя подписка', callback_data: '/subscription' }],
     [{ text: '💳 Оплатить подписку', callback_data: '/pay-subscription' }],
+    [{ text: '👥 Корпоративные скидки', callback_data: '/discounts' }],
     [{ text: '⤴️ Меню', callback_data: '/menu' }],
   ],
 };
@@ -169,4 +170,10 @@ export const TEMPLATE_KEYBOARD_PAY_SUBSCRIPTION_MENU = (
 
 export const KEYBOARD_SUPPORT = {
   inline_keyboard: [[{ text: '📧 Поддержка', callback_data: '/support' }]],
+};
+
+export const KEYBOARD_BACK_TO_TARIFFS = {
+  inline_keyboard: [
+    [{ text: '⤴️ Тарифы', callback_data: '/tariffs' }],
+  ],
 };

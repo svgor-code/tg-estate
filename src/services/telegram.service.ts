@@ -16,6 +16,7 @@ import {
   MESSAGE_CURRENT_ROOMS_FILTER,
   MESSAGE_CURRENT_SQUARE_FILTER,
   MESSAGE_DISABLE_SUBSCRIPTION_INFO,
+  MESSAGE_DISCOUNTS_INFO,
   MESSAGE_DISTRICTS_FILTER,
   MESSAGE_FLOOR_FILTER,
   MESSAGE_HEADER_ABOUT,
@@ -63,6 +64,7 @@ import {
 import {
   KEYBOARD_BACK_TO_FILTER,
   KEYBOARD_BACK_TO_MENU,
+  KEYBOARD_BACK_TO_TARIFFS,
   KEYBOARD_DISTRICTS_FILTER,
   KEYBOARD_FILTERS_START,
   KEYBOARD_INACTIVE_SUBSCRIPTION_MENU,
@@ -178,6 +180,10 @@ export class TelegramService {
 
         if (command === '/tariffs') {
           await this.sendTariffs(user);
+        }
+
+        if (command === '/discounts') {
+          await this.sendDiscounts(user);
         }
 
         if (command === '/pay-subscription') {
@@ -366,6 +372,10 @@ export class TelegramService {
 
       if (command === '/tariffs') {
         await this.sendTariffs(user);
+      }
+
+      if (command === '/discounts') {
+        await this.sendDiscounts(user);
       }
 
       if (command === '/subscription') {
@@ -709,7 +719,6 @@ export class TelegramService {
 
   async sendTariffs(user: CreatedUser) {
     const subscriptions = await this.getPayableSubscriptions();
-    const subscriptionsNames = subscriptions.map((sub) => sub.name);
 
     return await this.bot.sendMessage(
       user.chatId,
@@ -717,6 +726,17 @@ export class TelegramService {
       {
         parse_mode: 'HTML',
         reply_markup: KEYBOARD_TARIFFS_MENU,
+      }
+    );
+  }
+
+  async sendDiscounts(user: CreatedUser) {
+    return await this.bot.sendMessage(
+      user.chatId,
+      MESSAGE_DISCOUNTS_INFO,
+      {
+        parse_mode: 'HTML',
+        reply_markup: KEYBOARD_BACK_TO_TARIFFS,
       }
     );
   }

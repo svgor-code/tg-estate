@@ -187,7 +187,7 @@ export const TEMPLATE_TARIFFS_MESSAGE = (
     .map((sub) => `<strong>${sub.name}:</strong> ${sub.priceString}`)
     .join('\n');
 
-  return `${MESSAGE_HEADER_TARIFFS}\n\nНотифик доступен по подписке в ${subscriptions.length} тарифах.\n\n${tariffsText}\n\nДля всех новых пользователей первые <strong>3 ДНЯ БЕСЛАТНО</strong>.\n\nОплатить подписку можно прямо в боте по истечении пробного периода. Оплатить можно картой.\n\nО статусе текущей подписки можно узнать по команде /subscription.`;
+  return `${MESSAGE_HEADER_TARIFFS}\n\nНотифик доступен по подписке в ${subscriptions.length} тарифах.\n\n${tariffsText}\n\nДля всех новых пользователей первые <strong>3 ДНЯ БЕСПЛАТНО</strong>.\n\nОплатить подписку можно прямо в боте по истечении пробного периода. Оплатить можно картой.\n\nО статусе текущей подписки можно узнать по команде /subscription.`;
 };
 
 export const TEMPLATE_PAY_SUBSCRIPTION_MESSAGE = () => {

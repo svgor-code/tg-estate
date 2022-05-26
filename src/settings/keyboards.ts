@@ -1,7 +1,9 @@
 import { DISTRICTS_NAMES } from 'src/enities/DistrictsFilter';
 import { ROOMS_NAMES } from 'src/enities/RoomsFilter';
+import { SELLER_TYPES } from 'src/enities/SellerTypeFilter';
 import { IDistrictsFilter } from 'src/interfaces/IDistrictsFilter';
 import { IRoomsFilter } from 'src/interfaces/IRoomsFilter';
+import { ISellerTypesFilter } from 'src/interfaces/ISellerTypesFilter';
 import { CreatedSubscription } from 'src/interfaces/Subscription';
 
 export const KEYBOARD_BACK_TO_MENU = {
@@ -17,11 +19,12 @@ export const KEYBOARD_FILTERS_START = {
     [
       { text: '🏷️ Цена объекта', callback_data: '/filter-maxprice' },
       { text: '🛁 Комнатность', callback_data: '/filter-rooms' },
+      { text: '🌇 Район', callback_data: '/filter-districts' },
     ],
     [
-      { text: '🌇 Район', callback_data: '/filter-districts' },
       { text: '🪜 Этаж', callback_data: '/filter-floors' },
       { text: '📐 Площадь', callback_data: '/filter-square' },
+      { text: '🧰 Продавец', callback_data: '/filter-seller-types' }
     ],
     [{ text: '⤴️ Меню', callback_data: '/menu' }],
   ],
@@ -91,6 +94,24 @@ export const KEYBOARD_DISTRICTS_FILTER = (districts: IDistrictsFilter) => {
         },
       ],
       [{ text: 'Готово', callback_data: '/filter-districts-save' }],
+    ],
+  };
+};
+
+export const KEYBOARD_SELLER_TYPES_FILTER = (sellers: ISellerTypesFilter) => {
+  return {
+    inline_keyboard: [
+      [
+        {
+          text: `${sellers[0] ? '✅' : ''} ${SELLER_TYPES[0]}`,
+          callback_data: '/filter-seller-types-0',
+        },
+        {
+          text: `${sellers[1] ? '✅' : ''} ${SELLER_TYPES[1]}`,
+          callback_data: '/filter-seller-types-1',
+        },
+      ],
+      [{ text: 'Готово', callback_data: '/filter-seller-types-save' }],
     ],
   };
 };
@@ -173,7 +194,5 @@ export const KEYBOARD_SUPPORT = {
 };
 
 export const KEYBOARD_BACK_TO_TARIFFS = {
-  inline_keyboard: [
-    [{ text: '⤴️ Тарифы', callback_data: '/tariffs' }],
-  ],
+  inline_keyboard: [[{ text: '⤴️ Тарифы', callback_data: '/tariffs' }]],
 };

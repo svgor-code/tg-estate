@@ -9,4 +9,5 @@ export interface IApartment {
   square: number;
   floor?: number;
   district: string;
+  sellerType: '0' | '1';
 }

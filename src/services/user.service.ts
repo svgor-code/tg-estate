@@ -8,6 +8,7 @@ import { CreatedUser, UserFilters } from 'src/interfaces/User';
 import { IDistrictsFilter } from 'src/interfaces/IDistrictsFilter';
 import { IApartment } from 'src/interfaces/IApartment';
 import { UpdateUserDto } from 'src/dto/user/UpdateUserDto';
+import { ISellerTypesFilter } from 'src/interfaces/ISellerTypesFilter';
 
 @Injectable()
 export class UserService {
@@ -139,6 +140,25 @@ export class UserService {
       {
         $set: {
           districtsFilter: JSON.stringify(districtsFilter),
+        },
+      },
+      {
+        new: true,
+      }
+    );
+
+    return updatedUser;
+  }
+
+  async updateSellerTypesFilter(
+    userId: string,
+    sellerTypesFilter: ISellerTypesFilter
+  ): Promise<CreatedUser> {
+    const updatedUser = await this.userModel.findByIdAndUpdate(
+      userId,
+      {
+        $set: {
+          sellerTypesFilter: JSON.stringify(sellerTypesFilter),
         },
       },
       {

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { DISTRICTS_NAMES } from 'src/enities/DistrictsFilter';
+import { SELLER_TYPES } from 'src/enities/SellerTypeFilter';
 import { IApartment } from 'src/interfaces/IApartment';
 import { TelegramService } from './telegram.service';
 import { UserService } from './user.service';
@@ -22,7 +23,15 @@ export class ApartmentService {
       });
 
       apartments.forEach(async (apartment) => {
-        const { price, platformId, floor, square, rooms, district } = apartment;
+        const {
+          price,
+          platformId,
+          floor,
+          square,
+          rooms,
+          district,
+          sellerType,
+        } = apartment;
 
         users.forEach(async (user) => {
           const {
@@ -32,6 +41,7 @@ export class ApartmentService {
             maxSquareFilter,
             maxPriceFilter,
             districtsFilter,
+            sellerTypesFilter,
             roomsFilter,
             sendedApartments,
           } = user;
@@ -44,6 +54,7 @@ export class ApartmentService {
             this.filterByPrimitive(price, maxPriceFilter, 'lte') &&
             this.filterByRooms(roomsFilter, rooms) &&
             this.filterByDistrict(districtsFilter, district) &&
+            this.filterBySellerTypes(sellerTypesFilter, sellerType) &&
             !sendedApartments.includes(platformId)
           ) {
             await this.telegramService.sendApartment(user, apartment);
@@ -98,6 +109,23 @@ export class ApartmentService {
     const filterKey = this.getKeyByValue(DISTRICTS_NAMES, district);
 
     return districtsFilter[filterKey];
+  }
+
+  private filterBySellerTypes(
+    sellerTypesFilterJSON: string,
+    sellerType?: '0' | '1'
+  ) {
+    if (!sellerType) return false;
+
+    const sellerTypesFilter = JSON.parse(sellerTypesFilterJSON || 'null');
+
+    if (!sellerTypesFilter) return true;
+
+    if (Object.values(sellerTypesFilter).every((value) => !value)) {
+      return true;
+    }
+
+    return sellerTypesFilter[sellerType];
   }
 
   private getKeyByValue(object, value) {

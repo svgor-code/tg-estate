@@ -24,6 +24,9 @@ export class User {
   @Prop({ type: String, required: false })
   districtsFilter: string;
 
+  @Prop({ type: String, require: true, default: '{"0": true, "1": true}' })
+  sellerTypesFilter: string;
+
   @Prop({ type: Number, required: false })
   maxPriceFilter: number;
 

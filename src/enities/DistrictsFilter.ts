@@ -15,9 +15,9 @@ export class DistrictsFilter {
     '3': false,
   };
 
-  public switchFilter(roomsCount: keyof IDistrictsFilter) {
-    const oldValue = this._filter[roomsCount];
-    this._filter[roomsCount] = !oldValue;
+  public switchFilter(districtIndex: keyof IDistrictsFilter) {
+    const oldValue = this._filter[districtIndex];
+    this._filter[districtIndex] = !oldValue;
   }
 
   public setFilterTemplate(filterTemplete?: IDistrictsFilter | null) {

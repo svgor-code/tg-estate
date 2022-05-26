@@ -2,6 +2,7 @@ import { Payment } from '@a2seven/yoo-checkout';
 import moment from 'moment';
 import { DISTRICTS_NAMES } from 'src/enities/DistrictsFilter';
 import { ROOMS_NAMES } from 'src/enities/RoomsFilter';
+import { SELLER_TYPES } from 'src/enities/SellerTypeFilter';
 import { IApartment } from 'src/interfaces/IApartment';
 import { CreatedSubscription } from 'src/interfaces/Subscription';
 
@@ -11,6 +12,7 @@ export type AllFiltersValues = {
   rooms: string | null;
   district: string | null;
   square: string | null;
+  seller: string | null;
 };
 
 export const MESSAGE_START = (isActiveInitialSub: boolean) =>
@@ -31,6 +33,7 @@ export const MESSAGE_CURRENT_FILTERS =
 
 export const MESSAGE_ROOMS_FILTER = 'Выберите количество комнат:';
 export const MESSAGE_DISTRICTS_FILTER = 'Выберите районы:';
+export const MESSAGE_SELLER_TYPES_FILTER = 'Выберите тип продавца:';
 
 export const MESSAGE_SUCCESSFULLY_UPDATE = (isSearchActive: boolean) =>
   `Успешно сохранено! \n\n${
@@ -62,6 +65,7 @@ export const MESSAGE_HEADER_FILTER_DISTRICTS = `⚙️ Районы`;
 export const MESSAGE_HEADER_FILTER_ROOMS = `⚙️ Количество комнат`;
 export const MESSAGE_HEADER_FILTER_MAXPRICE = `⚙️ Цена объекта`;
 export const MESSAGE_HEADER_FILTER_SQUARE = `⚙️ Площадь`;
+export const MESSAGE_HEADER_FILTER_SELLER_TYPES = `⚙️ Продавец`;
 
 export const MESSAGE_HEADER_MAIN_MENU = `📋 <strong>Меню</strong>`;
 export const MESSAGE_HEADER_SEARCH = `✉️ <strong>Оповещения</strong>`;
@@ -107,10 +111,18 @@ export const MESSAGE_SUBSCRIPTION_ERROR = `Не удалось осуществ�
 
 export const MESSAGE_CURRENT_DISTRICTS_FILTER = (activeDistricts) => {
   const districtsList = activeDistricts
-    .map((room) => DISTRICTS_NAMES[room])
+    .map((districtIndex) => DISTRICTS_NAMES[districtIndex])
     .join(', ');
 
   return `<strong>${districtsList}</strong>`;
+};
+
+export const MESSAGE_CURRENT_SELLER_TYPES_FILTER = (activeSellers) => {
+  const sellersList = activeSellers
+    .map((sellerIndex) => SELLER_TYPES[sellerIndex])
+    .join(', ');
+
+  return `<strong>${sellersList}</strong>`;
 };
 
 export const TEMPLATE_SEARCH_VALUE = (
@@ -138,7 +150,7 @@ export const TEMPLATE_ALL_FILTERS_VALUE = (
     filters.floor || '-'
   } \n\n - Количество комнат: ${filters.rooms || '-'} \n\n - Площадь: ${
     filters.square || '-'
-  } \n\n${body ? body : ''}`;
+  } \n\n - Продавец: ${filters.seller} \n\n${body ? body : ''}`;
 };
 
 export const TEMPLATE_FILTER_VALUE = (

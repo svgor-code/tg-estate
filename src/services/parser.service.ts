@@ -7,6 +7,15 @@ import { ApartmentService } from './apartment.service';
 export class ParserService {
   private readonly logger = new Logger(ParserService.name);
 
+  private avitoUrls = {
+    owner:
+      'https://www.avito.ru/ulyanovsk/kvartiry/prodam/vtorichka-ASgBAQICAUSSA8YQAUDmBxSMUg?f=ASgBAQICAUSSA8YQA0DmBxSMUpC~DRSWrjWO3g4UAg&s=104',
+    agent:
+      'https://www.avito.ru/ulyanovsk/kvartiry/prodam/vtorichka-ASgBAQICAUSSA8YQAUDmBxSMUg?f=ASgBAQICAUSSA8YQA0DmBxSMUpC~DRSUrjWO3g4UAg&s=104',
+  };
+
+  private sellerType: keyof typeof this.avitoUrls = 'owner';
+
   constructor(private apartmentService: ApartmentService) {}
 
   async parseAvitoCatalog(): Promise<{
@@ -15,18 +24,17 @@ export class ParserService {
     error?: Error;
   }> {
     try {
-      this.logger.log('avito catalog parser started');
+      this.logger.log(`avito catalog parser started ${this.sellerType}`);
 
-      const response = await got.get(
-        'https://www.avito.ru/ulyanovsk/kvartiry/prodam/vtorichka-ASgBAQICAUSSA8YQAUDmBxSMUg?f=ASgBAQICAUSSA8YQA0DmBxSMUo7eDhQCkN4OFAI&s=104',
-        {
-          http2: true,
-          headers: {
-            'user-agent':
-              'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.66 Safari/537.36',
-          },
-        }
-      );
+      const url = this.avitoUrls[this.sellerType];
+
+      const response = await got.get(url, {
+        http2: true,
+        headers: {
+          'user-agent':
+            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.66 Safari/537.36',
+        },
+      });
 
       const $ = cheerio.load(response.body);
 
@@ -73,6 +81,8 @@ export class ParserService {
           const floor = Number.parseInt(title.split(', ')[2].split('/')[0]);
           const pricePerMeter = Math.floor(price / square);
 
+          const sellerType: '0' | '1' = this.sellerType === 'owner' ? '0' : '1';
+
           return {
             platformId,
             title,
@@ -85,6 +95,7 @@ export class ParserService {
             floor,
             address,
             district: district.split(' ')[1] || '',
+            sellerType,
           };
         } catch (error) {
           this.logger.error(error);
@@ -98,6 +109,8 @@ export class ParserService {
       const apartments = Array.from(itemsToAdd) || [];
 
       await this.apartmentService.filterApartments(apartments);
+
+      this.sellerType = this.sellerType === 'agent' ? 'owner' : 'agent';
 
       return {
         apartments,

@@ -14,6 +14,7 @@ import {
   MESSAGE_CURRENT_FLOOR_FILTER,
   MESSAGE_CURRENT_MAXPRICE_FILTER,
   MESSAGE_CURRENT_ROOMS_FILTER,
+  MESSAGE_CURRENT_SELLER_TYPES_FILTER,
   MESSAGE_CURRENT_SQUARE_FILTER,
   MESSAGE_DISABLE_SUBSCRIPTION_INFO,
   MESSAGE_DISCOUNTS_INFO,
@@ -25,6 +26,7 @@ import {
   MESSAGE_HEADER_FILTER_FlOOR,
   MESSAGE_HEADER_FILTER_MAXPRICE,
   MESSAGE_HEADER_FILTER_ROOMS,
+  MESSAGE_HEADER_FILTER_SELLER_TYPES,
   MESSAGE_HEADER_FILTER_SQUARE,
   MESSAGE_HEADER_MAIN_MENU,
   MESSAGE_HEADER_SEARCH,
@@ -35,6 +37,7 @@ import {
   MESSAGE_ROOMS_FILTER,
   MESSAGE_SEARCH_OFF,
   MESSAGE_SEARCH_ON,
+  MESSAGE_SELLER_TYPES_FILTER,
   MESSAGE_SQUARE_FILTER,
   MESSAGE_START,
   MESSAGE_START_2,
@@ -71,6 +74,7 @@ import {
   KEYBOARD_MAIN_MENU,
   KEYBOARD_ROOMS_FILTER,
   KEYBOARD_SEARCH_MENU,
+  KEYBOARD_SELLER_TYPES_FILTER,
   KEYBOARD_SUPPORT,
   KEYBOARD_TARIFFS_MENU,
   TEMPLATE_KEYBOARD_PAY_SUBSCRIPTION_MENU,
@@ -85,6 +89,8 @@ import { CreatedSubscription } from 'src/interfaces/Subscription';
 import { UserSubscriptionService } from './userSubscription.service';
 import { YookassaService } from './yookassa.service';
 import { Payment } from '@a2seven/yoo-checkout';
+import { SellerTypeFilter } from 'src/enities/SellerTypeFilter';
+import { ISellerTypesFilter } from 'src/interfaces/ISellerTypesFilter';
 
 @Injectable()
 export class TelegramService {
@@ -247,6 +253,12 @@ export class TelegramService {
         JSON.parse(user.districtsFilter || 'null')
       );
 
+      const sellerTypesFilter = new SellerTypeFilter();
+
+      sellerTypesFilter.setFilterTemplate(
+        JSON.parse(user.sellerTypesFilter || 'null')
+      );
+
       /* rooms filter */
       if (command === '/filter-rooms') {
         await this.sendRoomsFilter(user, roomsFilter);
@@ -327,6 +339,41 @@ export class TelegramService {
           await this.sendSuccessfullyUpdate(user);
         }
       }
+
+      /* seller type filter */
+      if (command === '/filter-seller-types') {
+        await this.sendSellerTypesFilter(user, sellerTypesFilter);
+      }
+
+      if (/\/filter-seller-types-[0-1]/.test(command)) {
+        const sellerType = command.match(/[0-1]/)[0];
+
+        sellerTypesFilter.switchFilter(
+          sellerType as unknown as keyof ISellerTypesFilter
+        );
+
+        const saveResult = await this.userService.updateSellerTypesFilter(
+          user._id,
+          sellerTypesFilter.filter
+        );
+
+        if (saveResult) {
+          await this.sendSellerTypesFilter(user, sellerTypesFilter);
+        }
+      }
+
+      if (command === '/filter-seller-types-save') {
+        const saveResult = await this.userService.updateSellerTypesFilter(
+          user._id,
+          sellerTypesFilter.filter
+        );
+
+        if (saveResult) {
+          await this.sendSuccessfullyUpdate(user);
+        }
+      }
+
+      /* search */
 
       if (command === '/search-start') {
         const searchResult = await this.userService.switchSearch(
@@ -731,14 +778,10 @@ export class TelegramService {
   }
 
   async sendDiscounts(user: CreatedUser) {
-    return await this.bot.sendMessage(
-      user.chatId,
-      MESSAGE_DISCOUNTS_INFO,
-      {
-        parse_mode: 'HTML',
-        reply_markup: KEYBOARD_BACK_TO_TARIFFS,
-      }
-    );
+    return await this.bot.sendMessage(user.chatId, MESSAGE_DISCOUNTS_INFO, {
+      parse_mode: 'HTML',
+      reply_markup: KEYBOARD_BACK_TO_TARIFFS,
+    });
   }
 
   async sendPaySubscription(user: CreatedUser) {
@@ -779,12 +822,18 @@ export class TelegramService {
       JSON.parse(user.districtsFilter || 'null')
     );
 
+    const sellerTypesFilter = new SellerTypeFilter();
+    sellerTypesFilter.setFilterTemplate(
+      JSON.parse(user.sellerTypesFilter || 'null')
+    );
+
     const currentFilters: AllFiltersValues = {
       rooms: this.getCurrentRoomsFilter(roomsFilter),
       district: this.getCurrentDistrictsFilter(districtsFilter),
       floor: this.getCurrentFloorFilter(user),
       maxprice: this.getCurrentMaxPriceFilter(user),
       square: this.getCurrentSquareFilter(user),
+      seller: this.getCurrentSellerTypesFilter(sellerTypesFilter),
     };
 
     return await this.bot.sendMessage(
@@ -857,6 +906,27 @@ export class TelegramService {
       {
         parse_mode: 'HTML',
         reply_markup: KEYBOARD_DISTRICTS_FILTER(districtsFilter.filter),
+      }
+    );
+  }
+
+  async sendSellerTypesFilter(
+    user: CreatedUser,
+    sellerTypesFilter: SellerTypeFilter
+  ) {
+    const currentSellerTypesFilterMessage =
+      this.getCurrentSellerTypesFilter(sellerTypesFilter);
+
+    return await this.bot.sendMessage(
+      user.chatId,
+      TEMPLATE_FILTER_VALUE(
+        MESSAGE_HEADER_FILTER_SELLER_TYPES,
+        currentSellerTypesFilterMessage,
+        MESSAGE_SELLER_TYPES_FILTER
+      ),
+      {
+        parse_mode: 'HTML',
+        reply_markup: KEYBOARD_SELLER_TYPES_FILTER(sellerTypesFilter.filter),
       }
     );
   }
@@ -1001,5 +1071,13 @@ export class TelegramService {
     );
 
     return MESSAGE_CURRENT_DISTRICTS_FILTER(activeDistricts);
+  }
+
+  private getCurrentSellerTypesFilter(sellerTypesFilter: SellerTypeFilter) {
+    const activeSellerTypes = Object.keys(sellerTypesFilter.filter).filter(
+      (room) => sellerTypesFilter.filter[room]
+    );
+
+    return MESSAGE_CURRENT_SELLER_TYPES_FILTER(activeSellerTypes);
   }
 }

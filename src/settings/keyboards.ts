@@ -19,12 +19,14 @@ export const KEYBOARD_FILTERS_START = {
     [
       { text: '🏷️ Цена объекта', callback_data: '/filter-maxprice' },
       { text: '🛁 Комнатность', callback_data: '/filter-rooms' },
-      { text: '🌇 Район', callback_data: '/filter-districts' },
     ],
     [
+      { text: '🌇 Район', callback_data: '/filter-districts' },
       { text: '🪜 Этаж', callback_data: '/filter-floors' },
+    ],
+    [
       { text: '📐 Площадь', callback_data: '/filter-square' },
-      { text: '🧰 Продавец', callback_data: '/filter-seller-types' }
+      { text: '🧰 Продавец', callback_data: '/filter-seller-types' },
     ],
     [{ text: '⤴️ Меню', callback_data: '/menu' }],
   ],

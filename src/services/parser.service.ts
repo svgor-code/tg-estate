@@ -83,6 +83,25 @@ export class ParserService {
 
           const sellerType: '0' | '1' = this.sellerType === 'owner' ? '0' : '1';
           // console.log(`${title} ${address}`);
+
+          if (platformId === '2451527739') {
+            console.log(`${title} ${address}`);
+            console.log({
+              platformId,
+              title,
+              href,
+              price,
+              pricePerMeter,
+              house,
+              rooms: rooms || 0,
+              square,
+              floor,
+              address,
+              district: district.split(' ')[1] || '',
+              sellerType,
+            });
+          }
+
           return {
             platformId,
             title,

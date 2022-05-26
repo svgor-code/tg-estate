@@ -2,7 +2,7 @@ import { ISellerTypesFilter } from 'src/interfaces/ISellerTypesFilter';
 
 export const SELLER_TYPES = {
   '0': 'Собственник',
-  '1': 'Агенство',
+  '1': 'Агентство',
 };
 
 export class SellerTypeFilter {

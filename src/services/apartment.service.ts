@@ -46,6 +46,21 @@ export class ApartmentService {
             sendedApartments,
           } = user;
 
+          if (platformId === '2451527739') {
+            this.logger.log(
+              'cheking',
+              this.filterByPrimitive(floor, minFloorFilter, 'gte'),
+              this.filterByPrimitive(floor, maxFloorFilter, 'lte'),
+              this.filterByPrimitive(square, minSquareFilter, 'gte'),
+              this.filterByPrimitive(square, maxSquareFilter, 'lte'),
+              this.filterByPrimitive(price, maxPriceFilter, 'lte'),
+              this.filterByRooms(roomsFilter, rooms),
+              this.filterByDistrict(districtsFilter, district),
+              this.filterBySellerTypes(sellerTypesFilter, sellerType),
+              !sendedApartments.includes(platformId)
+            );
+          }
+
           if (
             this.filterByPrimitive(floor, minFloorFilter, 'gte') &&
             this.filterByPrimitive(floor, maxFloorFilter, 'lte') &&

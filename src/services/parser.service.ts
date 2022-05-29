@@ -10,8 +10,8 @@ export class ParserService {
   private avitoUrls = {
     owner:
       'https://www.avito.ru/ulyanovsk/kvartiry/prodam/vtorichka-ASgBAQICAUSSA8YQAUDmBxSMUg?f=ASgBAQICAUSSA8YQA0DmBxSMUpC~DRSWrjWO3g4UAg&s=104',
-    agent:
-      'https://www.avito.ru/ulyanovsk/kvartiry/prodam/vtorichka-ASgBAQICAUSSA8YQAUDmBxSMUg?f=ASgBAQICAUSSA8YQA0DmBxSMUpC~DRSUrjWO3g4UAg&s=104',
+    all:
+      'https://www.avito.ru/ulyanovsk/kvartiry/prodam/vtorichka-ASgBAQICAUSSA8YQAUDmBxSMUg?f=ASgBAQICAUSSA8YQAkDmBxSMUo7eDhQC&s=104',
   };
 
   private sellerType: keyof typeof this.avitoUrls = 'owner';
@@ -110,7 +110,7 @@ export class ParserService {
 
       await this.apartmentService.filterApartments(apartments);
 
-      this.sellerType = this.sellerType === 'agent' ? 'owner' : 'agent';
+      this.sellerType = this.sellerType === 'all' ? 'owner' : 'all';
 
       return {
         apartments,

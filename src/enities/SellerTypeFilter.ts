@@ -2,7 +2,7 @@ import { ISellerTypesFilter } from 'src/interfaces/ISellerTypesFilter';
 
 export const SELLER_TYPES = {
   '0': 'Собственник',
-  '1': 'Агентство',
+  '1': 'Все',
 };
 
 export class SellerTypeFilter {
@@ -18,6 +18,12 @@ export class SellerTypeFilter {
   public switchFilter(sellerIndex: keyof ISellerTypesFilter) {
     const oldValue = this._filter[sellerIndex];
     this._filter[sellerIndex] = !oldValue;
+
+    Object.keys(this._filter)
+      .filter((key) => key !== String(sellerIndex))
+      .forEach((key) => {
+        this._filter[key] = oldValue;
+      });
   }
 
   public setFilterTemplate(filterTemplete?: ISellerTypesFilter | null) {

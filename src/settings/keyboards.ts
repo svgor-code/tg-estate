@@ -155,7 +155,7 @@ export const KEYBOARD_TARIFFS_MENU = {
   inline_keyboard: [
     [{ text: '⭐ Моя подписка', callback_data: '/subscription' }],
     [{ text: '💳 Оплатить подписку', callback_data: '/pay-subscription' }],
-    [{ text: '👥 Корпоративные скидки', callback_data: '/discounts' }],
+    // [{ text: '👥 Корпоративные скидки', callback_data: '/discounts' }],
     [{ text: '⤴️ Меню', callback_data: '/menu' }],
   ],
 };

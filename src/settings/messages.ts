@@ -224,7 +224,7 @@ export const TEMPLATE_ACTIVE_SUBSCRIPTION_INFO = (
   endedAt: Date
 ) => {
   return `Ваша активная подписка: <strong>${
-    subscription.name
+    subscription?.name
   }</strong>\nПодписка действительна до: ${moment(endedAt).format(
     'DD-MM-YYYY'
   )}`;

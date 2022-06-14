@@ -58,7 +58,6 @@ export class ParserService {
             '" Not A;Brand";v="99", "Chromium";v="102", "Google Chrome";v="102"',
           Host: 'www.avito.ru',
         },
-        throwHttpErrors: false,
       });
 
       const $ = cheerio.load(response.body);

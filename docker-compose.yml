@@ -4,26 +4,26 @@ volumes:
   node_modules:
   mongo:
 services:
-  node:
-    build:
-      context: .
-    env_file: ./.env
-    restart: unless-stopped
-    volumes:
-      - .:/app/
-      - node_modules:/app/node_modules
-    ports:
-      - ${PORT}:${PORT}
-    depends_on:
-      - mongo
-    environment:
-      - PORT=${PORT}
-      - MONGO_HOST=${MONGO_HOST}
-      - MONGO_PORT=${MONGO_PORT}
-      - MONGO_USERNAME=${MONGO_USERNAME}
-      - MONGO_PASSWORD=${MONGO_PASSWORD}
-      - MONGO_DB=${MONGO_DB}
-      - TG_TOKEN=${TG_TOKEN}
+  # node:
+  #   build:
+  #     context: .
+  #   env_file: ./.env
+  #   restart: unless-stopped
+  #   volumes:
+  #     - .:/app/
+  #     - node_modules:/app/node_modules
+  #   ports:
+  #     - ${PORT}:${PORT}
+  #   depends_on:
+  #     - mongo
+  #   environment:
+  #     - PORT=${PORT}
+  #     - MONGO_HOST=${MONGO_HOST}
+  #     - MONGO_PORT=${MONGO_PORT}
+  #     - MONGO_USERNAME=${MONGO_USERNAME}
+  #     - MONGO_PASSWORD=${MONGO_PASSWORD}
+  #     - MONGO_DB=${MONGO_DB}
+  #     - TG_TOKEN=${TG_TOKEN}
   mongo:
     image: mongo
     restart: unless-stopped

@@ -10,9 +10,7 @@ import { TelegramModule } from './telegram.module';
 import { UserSubscriptionModule } from './userSubscription.module';
 import { YookassaModule } from './yookassa.module';
 
-const { MONGO_USERNAME, MONGO_PASSWORD, MONGO_PORT, MONGO_DB } = process.env;
-
-const mongoConnectionString = `mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@tg-estate-mongo-1:27017/${MONGO_DB}?authSource=admin&readPreference=primary&directConnection=true&ssl=false`;
+const mongoConnectionString = `mongodb://estate:ky5UnKQH@0.0.0.0:27018/tgestate?authSource=admin&readPreference=primary&directConnection=true&ssl=false`;
 
 @Module({
   imports: [

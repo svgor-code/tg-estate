@@ -31,6 +31,8 @@ export class ParserService {
 
       const html = await this.startParserScript(path);
 
+      console.log(html);
+
       const parsedHtml = html.replace('200 ', '');
 
       const $ = cheerio.load(parsedHtml);

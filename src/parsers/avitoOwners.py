@@ -1,6 +1,22 @@
-import requests, json, sys
+from time import sleep
+import requests, json
+from random_user_agent.user_agent import UserAgent
+from random_user_agent.params import SoftwareName, OperatingSystem
+from random import randrange
+import datetime 
 
-cookie = 'v=1656346070; path=/; expires=Mon, 27-Jun-22 16:38:13 GMT; HttpOnly; Max-Age=1800; secure; domain=.avito.ru; SameSite=Lax; buyer_location_id=659880; Path=/; Domain=avito.ru; Expires=Tue, 27 Jun 2023 16:08:13 GMT; Max-Age=31536000; HttpOnly; Secure; SameSite=Lax; sx=H4sIAAAAAAAC%2FwTAOw7CMAwG4Lv8MwOJH3FzmxRjEMpApaoeqt693wlrz3UJcSavYq9wtyJRhpqv4c3QTxzoOPby1f%2BwudGgWVMma24%2FzfzszQkPvNGLijJVXui67gAAAP%2F%2FRt4mzlsAAAA%3D; Path=/; Domain=avito.ru; Expires=Mon, 04 Jul 2022 16:08:13 GMT; Max-Age=604800; HttpOnly; Secure; SameSite=Lax; buyer_from_page=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax;' \
+software_names = [SoftwareName.CHROME.value]
+operating_systems = [OperatingSystem.WINDOWS.value, OperatingSystem.LINUX.value]
+
+user_agent_rotator = UserAgent(software_names=software_names, operating_systems=operating_systems, limit=100)
+
+# Get Random User Agent String.
+user_agent = user_agent_rotator.get_random_user_agent()
+
+randomDate = datetime.datetime(2023, 6, 15, 1, 6) + datetime.timedelta(minutes=randrange(60))
+randomTime = randomDate.strftime("%H:%M")
+
+cookie = 'buyer_location_id=659880; Path=/; Domain=avito.ru; Expires=Thu, 29 Jun 2023 {} GMT; Max-Age=31536000; HttpOnly; Secure;'.format(randomTime)
 
 def except_error(res): # Эту функцию можно дополнить, например обработку капчи
     print(res.status_code, res.text)
@@ -11,7 +27,7 @@ headers = { 'authority': 'www.avito.ru',
             'pragma': 'no-cache',
             'cache-control': 'no-cache',
             'upgrade-insecure-requests': '1',
-            'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36',
+            'user-agent': user_agent,
             'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
             'sec-fetch-site': 'none',
             'sec-fetch-mode': 'navigate',
@@ -22,13 +38,16 @@ headers = { 'authority': 'www.avito.ru',
 if cookie:                                      # Добавим куки, если есть внешние куки
     headers['cookie'] = cookie
 s.headers.update(headers)                       # Сохраняем заголовки в сессию
-res = s.get('https://www.avito.ru/ulyanovsk/kvartiry/prodam/vtorichka-ASgBAQICAUSSA8YQAUDmBxSMUg?f=ASgBAQICAUSSA8YQA0DmBxSMUpC~DRSWrjWO3g4UAg&s=104')                    # Делаем запрос на мобильную версию.
+res = s.get('https://www.avito.ru/ulyanovsk/kvartiry/sdam/na_dlitelnyy_srok-ASgBAgICAkSSA8gQ8AeQUg?cd=1&s=104&user=1')                    # Делаем запрос на мобильную версию.
 
 # response = response.json()
+sleep(5)
+
 
 try:
   res = res.json()
   print(res)
+  s.close()
 except json.decoder.JSONDecodeError:
   except_error(res)
 

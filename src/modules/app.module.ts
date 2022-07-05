@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ConfigModule } from '@nestjs/config';
 import { AppController } from '../controllers/app.controller';
 import { AppService } from '../services/app.service';
 import { ParserModule } from './parser.module';
@@ -14,6 +15,7 @@ const mongoConnectionString = `mongodb://estate:ky5UnKQH@0.0.0.0:27018/tgestate?
 
 @Module({
   imports: [
+    ConfigModule.forRoot(),
     MongooseModule.forRoot(mongoConnectionString),
     ScheduleModule.forRoot(),
     TaskModule,

@@ -188,9 +188,9 @@ export class TelegramService {
           await this.sendTariffs(user);
         }
 
-        if (command === '/discounts') {
-          await this.sendDiscounts(user);
-        }
+        // if (command === '/discounts') {
+        //   await this.sendDiscounts(user);
+        // }
 
         if (command === '/pay-subscription') {
           await this.sendPaySubscription(user);
@@ -421,9 +421,9 @@ export class TelegramService {
         await this.sendTariffs(user);
       }
 
-      if (command === '/discounts') {
-        await this.sendDiscounts(user);
-      }
+      // if (command === '/discounts') {
+      //   await this.sendDiscounts(user);
+      // }
 
       if (command === '/subscription') {
         await this.sendSubscriptionInfo(user);
@@ -777,12 +777,12 @@ export class TelegramService {
     );
   }
 
-  async sendDiscounts(user: CreatedUser) {
-    return await this.bot.sendMessage(user.chatId, MESSAGE_DISCOUNTS_INFO, {
-      parse_mode: 'HTML',
-      reply_markup: KEYBOARD_BACK_TO_TARIFFS,
-    });
-  }
+  // async sendDiscounts(user: CreatedUser) {
+  //   return await this.bot.sendMessage(user.chatId, MESSAGE_DISCOUNTS_INFO, {
+  //     parse_mode: 'HTML',
+  //     reply_markup: KEYBOARD_BACK_TO_TARIFFS,
+  //   });
+  // }
 
   async sendPaySubscription(user: CreatedUser) {
     const subscriptions = await this.getPayableSubscriptions();

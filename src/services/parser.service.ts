@@ -123,7 +123,10 @@ export class ParserService {
   private async startParserScript(path: string): Promise<any> {
     return new Promise((resolve) => {
       PythonShell.run(path, null, function (err, result) {
-        if (err) throw err;
+        if (err) {
+          this.logger.error(err);
+          return '';
+        };
         resolve(result.join(''));
       });
     });

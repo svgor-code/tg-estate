@@ -30,7 +30,7 @@ export class TaskService {
     private yookassaService: YookassaService
   ) {}
 
-  @Cron('50 */2 * * * *')
+  @Cron('50 */5 * * * *')
   startParseAvitoCatalog() {
     this.parserService.parseAvitoCatalog();
   }

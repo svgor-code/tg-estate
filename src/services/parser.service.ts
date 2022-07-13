@@ -26,7 +26,7 @@ export class ParserService {
     try {
       this.logger.log(`avito catalog parser started ${this.sellerType}`);
 
-      const path = this.avitoUrls['all'];
+      const path = this.avitoUrls[this.sellerType];
       this.sellerType = this.sellerType === 'all' ? 'owner' : 'all';
 
       const html = await this.startParserScript(path);

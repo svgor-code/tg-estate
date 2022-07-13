@@ -26,7 +26,7 @@ export class ParserService {
     try {
       this.logger.log(`avito catalog parser started ${this.sellerType}`);
 
-      const path = this.avitoUrls[this.sellerType];
+      const path = this.avitoUrls['all'];
       this.sellerType = this.sellerType === 'all' ? 'owner' : 'all';
 
       const html = await this.startParserScript(path);
@@ -46,6 +46,8 @@ export class ParserService {
           const platformId = $(item).attr('data-item-id');
           const title = elementTitle.find('h3').text();
           const href = `https://www.avito.ru${elementTitle.attr('href')}`;
+
+          console.log(title)
 
           const price = Number.parseFloat(
             $(item)
@@ -126,7 +128,7 @@ export class ParserService {
     return new Promise((resolve) => {
       PythonShell.run(path, null, function (err, result) {
         if (err) {
-          this.logger.error(err);
+          console.error(err);
           return '';
         };
         resolve(result.join(''));

@@ -1,53 +1,19 @@
-from time import sleep
-import requests, json
-from random_user_agent.user_agent import UserAgent
-from random_user_agent.params import SoftwareName, OperatingSystem
-from random import randrange
-import datetime 
+import requests
 
-software_names = [SoftwareName.CHROME.value]
-operating_systems = [OperatingSystem.WINDOWS.value, OperatingSystem.LINUX.value]
+def get_session():
+    session = requests.Session()
+    session.headers = {
+        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36',
+        'Accept-Language': 'ru,en-US;q=0.5',
+        'Accept-Encoding': 'gzip, deflate',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+        'Cookie': "sx=H4sIAAAAAAAC%2F1zQTZLaMBBA4btozaIl9Y80t5FabTAQGzsGY6Z899QsSIVc4KtX79sBUvQqoSBkD0BBU7UENSJISAnc17d7uC83100et0lvODb0fArNaKPnNixhvrG5gzP35Zkkec4p7AcHWRUwEGpVKzH4miRhM99Vwxr4LXM79f3luI7j6S7TLxXCy0p6zClsw3L9lCn9yEZNTNVXrylDBsteQvBMHbTC8pbX6%2FVcluMNacN%2Bg5Be96JjNw7Qn%2FPM%2F8qS5Kc5gLCl2oIEqASK6rmpEmlJavz3Rp7LMOHYyoCrzTifu7tVfbFQnOLC%2F93I%2B8ExM2sT7jJnYuRsUi3mJgSq0vJbxt%2F%2BAuHVEfDzNbz65Vx8f1rCZX14sO2jmVn2gysQi0Ug8yJdzCwBslGoAC017upbJj%2FmDqbnA%2F2iCH49rrFOkmYcZ2n42cy4738CAAD%2F%2F28KL80dAgAA; Path=/; Domain=avito.ru; Expires=Wed, 20 Jul 2022 16:57:52 GMT; Max-Age=604800; HttpOnly; Secure; SameSite=Lax"
+    }
 
-user_agent_rotator = UserAgent(software_names=software_names, operating_systems=operating_systems, limit=100)
+    return session
 
-# Get Random User Agent String.
-user_agent = user_agent_rotator.get_random_user_agent()
+url = 'http://api.scraperapi.com?api_key=b8a0d6d4b7886ffa3f7d1a998090228e&url=https://www.avito.ru/ulyanovsk/kvartiry/sdam/na_dlitelnyy_srok-ASgBAgICAkSSA8gQ8AeQUg?cd=1&s=104&user=1'
+session = get_session()
+res = session.get(url)
 
-randomDate = datetime.datetime(2023, 6, 15, 1, 6) + datetime.timedelta(minutes=randrange(60))
-randomTime = randomDate.strftime("%H:%M")
-
-cookie = 'buyer_location_id=659880; Path=/; Domain=avito.ru; Expires=Thu, 29 Jun 2023 {} GMT; Max-Age=31536000; HttpOnly; Secure;'.format(randomTime)
-
-def except_error(res): # Эту функцию можно дополнить, например обработку капчи
-    print(res.status_code, res.text)
-
-s = requests.Session()                          # Будем всё делать в рамках одной сессии
-
-headers = { 'authority': 'www.avito.ru',
-            'pragma': 'no-cache',
-            'cache-control': 'no-cache',
-            'upgrade-insecure-requests': '1',
-            'user-agent': user_agent,
-            'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
-            'sec-fetch-site': 'none',
-            'sec-fetch-mode': 'navigate',
-            'sec-fetch-user': '?1',
-            'sec-fetch-dest': 'document',
-            'accept-language': 'ru-RU,ru;q=0.9',}
-
-if cookie:                                      # Добавим куки, если есть внешние куки
-    headers['cookie'] = cookie
-s.headers.update(headers)                       # Сохраняем заголовки в сессию
-res = s.get('https://www.avito.ru/ulyanovsk/kvartiry/sdam/na_dlitelnyy_srok-ASgBAgICAkSSA8gQ8AeQUg?cd=1&s=104&user=1')                    # Делаем запрос на мобильную версию.
-
-# response = response.json()
-sleep(5)
-
-
-try:
-  res = res.json()
-  print(res)
-  s.close()
-except json.decoder.JSONDecodeError:
-  except_error(res)
-
+print(res.text)

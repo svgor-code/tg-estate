@@ -1,9 +1,13 @@
+import moment from 'moment';
+import { Model } from 'mongoose';
 import { Injectable, Logger } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
 import { DISTRICTS_NAMES } from 'src/enities/DistrictsFilter';
-import { SELLER_TYPES } from 'src/enities/SellerTypeFilter';
 import { IApartment } from 'src/interfaces/IApartment';
+import { Apartment, ApartmentDocument } from 'src/schemas/apartment.schema';
 import { TelegramService } from './telegram.service';
 import { UserService } from './user.service';
+import { CreatedUser } from 'src/interfaces/User';
 
 @Injectable()
 export class ApartmentService {
@@ -11,7 +15,9 @@ export class ApartmentService {
 
   constructor(
     private userService: UserService,
-    private telegramService: TelegramService
+    private telegramService: TelegramService,
+    @InjectModel(Apartment.name)
+    private apartmentModel: Model<ApartmentDocument>
   ) {}
 
   async filterApartments(
@@ -23,40 +29,8 @@ export class ApartmentService {
       });
 
       apartments.forEach(async (apartment) => {
-        const {
-          price,
-          platformId,
-          floor,
-          square,
-          rooms,
-          district,
-          sellerType,
-        } = apartment;
-
         users.forEach(async (user) => {
-          const {
-            minFloorFilter,
-            maxFloorFilter,
-            minSquareFilter,
-            maxSquareFilter,
-            maxPriceFilter,
-            districtsFilter,
-            sellerTypesFilter,
-            roomsFilter,
-            sendedApartments,
-          } = user;
-
-          if (
-            this.filterByPrimitive(floor, minFloorFilter, 'gte') &&
-            this.filterByPrimitive(floor, maxFloorFilter, 'lte') &&
-            this.filterByPrimitive(square, minSquareFilter, 'gte') &&
-            this.filterByPrimitive(square, maxSquareFilter, 'lte') &&
-            this.filterByPrimitive(price, maxPriceFilter, 'lte') &&
-            this.filterByRooms(roomsFilter, rooms) &&
-            this.filterByDistrict(districtsFilter, district) &&
-            this.filterBySellerTypes(sellerTypesFilter, sellerType) &&
-            !sendedApartments.includes(platformId)
-          ) {
+          if (this.checkApartmentByUserFilters(apartment, user)) {
             await this.telegramService.sendApartment(user, apartment);
           }
         });
@@ -64,6 +38,123 @@ export class ApartmentService {
     } catch (error) {
       this.logger.error(error);
       return { success: false, error };
+    }
+  }
+
+  private checkApartmentByUserFilters(
+    apartment: IApartment,
+    user: CreatedUser
+  ) {
+    const { price, platformId, floor, square, rooms, district, sellerType } =
+      apartment;
+
+    const {
+      minFloorFilter,
+      maxFloorFilter,
+      minSquareFilter,
+      maxSquareFilter,
+      maxPriceFilter,
+      districtsFilter,
+      sellerTypesFilter,
+      roomsFilter,
+      sendedApartments,
+    } = user;
+
+    if (
+      this.filterByPrimitive(floor, minFloorFilter, 'gte') &&
+      this.filterByPrimitive(floor, maxFloorFilter, 'lte') &&
+      this.filterByPrimitive(square, minSquareFilter, 'gte') &&
+      this.filterByPrimitive(square, maxSquareFilter, 'lte') &&
+      this.filterByPrimitive(price, maxPriceFilter, 'lte') &&
+      this.filterByRooms(roomsFilter, rooms) &&
+      this.filterByDistrict(districtsFilter, district) &&
+      this.filterBySellerTypes(sellerTypesFilter, sellerType) &&
+      !sendedApartments.includes(platformId)
+    ) {
+      return true;
+    }
+
+    return false;
+  }
+
+  async saveTempApartments(apartments: IApartment[]) {
+    try {
+      await this.removeExpiredTempApartments();
+
+      const existedApartments = await this.apartmentModel.find().exec();
+      const filteredApartments = apartments.filter((apartment) => {
+        const existApartmentsClones = existedApartments.filter(
+          (i) => i.platformId === apartment.platformId
+        );
+
+        const isExistCloneWithSellerType = existApartmentsClones.find(
+          (clone) => clone.sellerType === apartment.sellerType
+        );
+
+        if (
+          !existApartmentsClones.length ||
+          !isExistCloneWithSellerType
+        ) {
+          return true;
+        }
+
+        return false;
+      });
+
+      await this.apartmentModel.insertMany(filteredApartments);
+    } catch (error) {
+      this.logger.error(error);
+    }
+  }
+
+  async sendTempApartments() {
+    try {
+      const apartments = await this.apartmentModel.find().exec();
+      const users = await this.userService.findAll({
+        isSearchActive: true,
+      });
+
+      const userApartmentsMap = new Map<CreatedUser, IApartment[]>();
+
+      console.log(apartments.length);
+
+      users.forEach((user) => {
+        apartments.forEach((apartment) => {
+          if (this.checkApartmentByUserFilters(apartment as IApartment, user)) {
+            const existedApartments = userApartmentsMap.get(user) || [];
+
+            if (existedApartments.length === 7) {
+              return;
+            }
+
+            userApartmentsMap.set(user, [
+              ...existedApartments,
+              apartment as IApartment,
+            ]);
+          }
+        });
+      });
+
+      userApartmentsMap.forEach(async (apartments, user) => {
+        apartments.forEach(async (apartment) => {
+          await this.telegramService.sendApartment(user, apartment);
+        });
+      });
+    } catch (error) {
+      this.logger.error(error);
+      return [];
+    }
+  }
+
+  private async removeExpiredTempApartments() {
+    try {
+      await this.apartmentModel.deleteMany({
+        createdAt: {
+          $lte: moment().subtract(1, 'day').toDate(),
+        },
+      });
+    } catch (error) {
+      this.logger.error(error);
     }
   }
 
@@ -94,6 +185,10 @@ export class ApartmentService {
 
     if (!roomsFilter) return true;
 
+    if (!Object.values(roomsFilter).includes(true)) {
+      return true;
+    }
+
     const filterKey = rooms > 5 ? '5' : `${rooms}`;
 
     return roomsFilter[filterKey];
@@ -105,6 +200,10 @@ export class ApartmentService {
     const districtsFilter = JSON.parse(districtsFilterJSON || 'null');
 
     if (!districtsFilter) return true;
+
+    if (!Object.values(districtsFilter).includes(true)) {
+      return true;
+    }
 
     const filterKey = this.getKeyByValue(DISTRICTS_NAMES, district);
 
@@ -121,7 +220,7 @@ export class ApartmentService {
 
     if (!sellerTypesFilter) return true;
 
-    if (Object.values(sellerTypesFilter).every((value) => !value)) {
+    if (!Object.values(sellerTypesFilter).includes(true)) {
       return true;
     }
 

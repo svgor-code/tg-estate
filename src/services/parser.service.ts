@@ -4,6 +4,7 @@ import { PythonShell } from 'python-shell';
 import { Injectable, Logger } from '@nestjs/common';
 import { ApartmentService } from './apartment.service';
 import path from 'path';
+import { IApartment } from 'src/interfaces/IApartment';
 
 @Injectable()
 export class ParserService {
@@ -27,12 +28,10 @@ export class ParserService {
       this.logger.log(`avito catalog parser started ${this.sellerType}`);
 
       const path = this.avitoUrls[this.sellerType];
+      const currentSellerType: '0' | '1' = this.sellerType === 'owner' ? '0' : '1';
       this.sellerType = this.sellerType === 'all' ? 'owner' : 'all';
 
       const html = await this.startParserScript(path);
-
-      console.log(html);
-
       const parsedHtml = html.replace('200 ', '');
 
       const $ = cheerio.load(parsedHtml);
@@ -44,7 +43,7 @@ export class ParserService {
           const elementTitle = $(item).find('a[data-marker=item-title]');
 
           const platformId = $(item).attr('data-item-id');
-          const title = elementTitle.find('h3').text();
+          const title: string = elementTitle.find('h3').text() || '';
           const href = `https://www.avito.ru${elementTitle.attr('href')}`;
 
           console.log(title)
@@ -69,7 +68,7 @@ export class ParserService {
 
           const roomsData = title.split(',')[0].toLowerCase();
 
-          let rooms;
+          let rooms: number = 0;
 
           if (roomsData.includes('-к.')) {
             rooms = Number.parseInt(roomsData.split('-')[0]);
@@ -81,8 +80,6 @@ export class ParserService {
 
           const floor = Number.parseInt(title.split(', ')[2].split('/')[0]);
           const pricePerMeter = Math.floor(price / square);
-
-          const sellerType: '0' | '1' = this.sellerType === 'owner' ? '0' : '1';
 
           return {
             platformId,
@@ -96,7 +93,7 @@ export class ParserService {
             floor,
             address,
             district: district.split(' ')[1] || '',
-            sellerType,
+            sellerType: currentSellerType,
           };
         } catch (error) {
           this.logger.error(error);
@@ -104,10 +101,10 @@ export class ParserService {
       });
 
       const itemsToAdd = Array.from(items);
-
-      const apartments = Array.from(itemsToAdd) || [];
+      const apartments: IApartment[] = Array.from(itemsToAdd) || [];
 
       await this.apartmentService.filterApartments(itemsToAdd || []);
+      await this.apartmentService.saveTempApartments(itemsToAdd || []);
 
       return {
         apartments,

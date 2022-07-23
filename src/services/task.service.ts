@@ -5,6 +5,7 @@ import { UserSubscriptionService } from './userSubscription.service';
 import moment from 'moment';
 import { TelegramService } from './telegram.service';
 import { YookassaService } from './yookassa.service';
+import { ApartmentService } from './apartment.service';
 
 /*
 
@@ -27,7 +28,8 @@ export class TaskService {
     private parserService: ParserService,
     private userSubscriptionService: UserSubscriptionService,
     private telegramService: TelegramService,
-    private yookassaService: YookassaService
+    private yookassaService: YookassaService,
+    private apartmentService: ApartmentService,
   ) {}
 
   @Cron('50 */12 * * * *')
@@ -62,6 +64,12 @@ export class TaskService {
         }
       })
     );
+  }
+
+  @Cron('*/3 * * * *')
+  async sendApartmentsFromCache() {
+    this.logger.log('send temp apartments')
+    await this.apartmentService.sendTempApartments();
   }
 
   @Cron('* * * * *')

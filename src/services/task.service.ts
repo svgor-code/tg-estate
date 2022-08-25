@@ -32,7 +32,7 @@ export class TaskService {
     private apartmentService: ApartmentService,
   ) {}
 
-  @Cron('50 */12 * * * *')
+  @Cron('50 */40 * * * *')
   startParseAvitoCatalog() {
     this.parserService.parseAvitoCatalog();
   }

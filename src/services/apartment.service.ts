@@ -150,7 +150,7 @@ export class ApartmentService {
     try {
       await this.apartmentModel.deleteMany({
         createdAt: {
-          $lte: moment().subtract(1, 'day').toDate(),
+          $lte: moment().subtract(3, 'days').toDate(),
         },
       });
     } catch (error) {
